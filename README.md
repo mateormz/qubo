@@ -48,8 +48,8 @@ QUBO es una plataforma educativa gamificada que permite a estudiantes de secunda
 
 ## 📦 Estructura del Proyecto
 
-/frontend --> App en React
-/backend --> API con Spring Boot
-/database --> Scripts de creación y carga de BD
-/docs --> Documentación de endpoints y modelo de datos
-/docker --> Dockerfiles y docker-compose
+- /frontend --> App en React
+- /backend --> API con Spring Boot
+- /database --> Scripts de creación y carga de BD
+- /docs --> Documentación de endpoints y modelo de datos
+- /docker --> Dockerfiles y docker-compose
