@@ -1,6 +1,8 @@
-# 🧠 QUBO — Plataforma Web para Aprender Matemática Jugando
+<h1 align="center">🧠 QUBO — Plataforma Web para Aprender Matemática Jugando</h1>
 
-QUBO es una plataforma educativa gamificada que permite a estudiantes de secundaria practicar matemáticas a través de minijuegos, desafíos diarios y una mascota virtual personalizable. También ofrece a los profesores herramientas para asignar actividades, monitorear el avance y dar retroalimentación individual.
+<p align="center">
+  QUBO es una plataforma educativa gamificada que permite a estudiantes de secundaria practicar matemáticas a través de minijuegos, desafíos diarios y una mascota virtual personalizable. También ofrece a los profesores herramientas para asignar actividades, monitorear el avance y dar retroalimentación individual.
+</p>
 
 ---
 
@@ -27,29 +29,29 @@ QUBO es una plataforma educativa gamificada que permite a estudiantes de secunda
 
 ### 🔹 Frontend
 - React.js
-- HTML, CSS y JavaScript
+- HTML5, CSS3, JavaScript
 - React Router DOM
 - Context API
 - Tailwind CSS o Material UI
 
-### 🔹 Backend
-- Java + Spring Boot
-- Authentication
-- PostgreSQL
-- REST API
+### 🔹 Backend (Serverless)
+- AWS Lambda (funciones backend)
+- API Gateway (exposición de endpoints)
+- DynamoDB (base de datos NoSQL)
+- JWT para autenticación y autorización
+- CloudWatch (logs y métricas)
 
-### 🔹 DevOps / Infraestructura
-- Docker
-- AWS EC2 (Deploy Backend)
-- AWS S3
-- GitHub
+### 🔹 Infraestructura
+- Amazon S3 (hosting del frontend)
+- CloudFront (distribución global)
+- GitHub (control de versiones y CI/CD)
+- Docker (desarrollo y testing local)
 
 ---
 
 ## 📦 Estructura del Proyecto
-
 - /frontend --> App en React
-- /backend --> API con Spring Boot
-- /database --> Scripts de creación y carga de BD
-- /docs --> Documentación de endpoints y modelo de datos
-- /docker --> Dockerfiles y docker-compose
+- /backend --> Funciones Lambda (JavaScript)
+- /infrastructure --> Configuraciones de AWS (Serverless Framework o SAM)
+- /docs --> Documentación de endpoints, modelos y flujos
+- /assets --> Imágenes, logo, íconos
