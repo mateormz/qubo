@@ -4,9 +4,7 @@ import boto3
 
 def validate_token(event, lambda_client):
     try:
-        user_table_name = os.environ['TABLE_USERS']
         validate_function_name = f"{os.environ['SERVICE_NAME']}-{os.environ['STAGE']}-{os.environ['VALIDATE_TOKEN_FUNCTION']}"
-        print("[INFO] Environment variables loaded successfully")
     except KeyError as env_error:
         return {
             'statusCode': 500,
@@ -14,17 +12,8 @@ def validate_token(event, lambda_client):
             'body': json.dumps({'error': f"Missing environment variable: {str(env_error)}"})
         }
 
-    try:
-        body = json.loads(event.get('body', '{}'))
-    except json.JSONDecodeError:
-        return {
-            'statusCode': 400,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Invalid JSON in request body'})
-        }
-
-    token = body.get('token')
-
+    # Obtener token desde header Authorization
+    token = event.get('headers', {}).get('Authorization')
     if not token:
         return {
             'statusCode': 400,
@@ -32,13 +21,24 @@ def validate_token(event, lambda_client):
             'body': json.dumps({'error': 'Authorization token is missing'})
         }
 
-    payload = {"body": json.dumps({"token": token})}
-    validate_response = lambda_client.invoke(
-        FunctionName=validate_function_name,
-        InvocationType='RequestResponse',
-        Payload=json.dumps(payload)
-    )
-    validation_result = json.loads(validate_response['Payload'].read())
+    # Construir payload para la función de validación
+    payload = {
+        "body": json.dumps({"token": token})
+    }
+
+    try:
+        validate_response = lambda_client.invoke(
+            FunctionName=validate_function_name,
+            InvocationType='RequestResponse',
+            Payload=json.dumps(payload)
+        )
+        validation_result = json.loads(validate_response['Payload'].read())
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': f"Error invoking token validator: {str(e)}"})
+        }
 
     if validation_result.get('statusCode') != 200:
         return {
@@ -47,15 +47,16 @@ def validate_token(event, lambda_client):
             'body': json.dumps({'error': 'Unauthorized - Invalid or expired token'})
         }
 
-    try:
-        user_info = json.loads(validation_result.get('body', '{}'))
-    except json.JSONDecodeError:
+    # Asegurarse de que el body exista
+    body_str = validation_result.get('body')
+    if body_str is None:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Internal Server Error - Invalid token response format'})
+            'body': json.dumps({'error': 'Token validation response missing body'})
         }
 
+    user_info = json.loads(body_str)
     return user_info
 
 
