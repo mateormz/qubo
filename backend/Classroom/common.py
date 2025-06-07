@@ -4,7 +4,7 @@ import boto3
 
 def validate_token(event, lambda_client):
     try:
-        validate_function_name = f"{os.environ['SERVICE_NAME']}-{os.environ['STAGE']}-{os.environ['VALIDATE_TOKEN_FUNCTION']}"
+        validate_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-{os.environ['VALIDATE_TOKEN_FUNCTION']}"
     except KeyError as env_error:
         return {
             'statusCode': 500,
