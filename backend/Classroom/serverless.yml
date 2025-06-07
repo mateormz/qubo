@@ -11,7 +11,7 @@ provider:
   environment:
     SERVICE_NAME: qubo-classroom-api
     STAGE: ${sls:stage}
-    TABLE_CLASSROOMS: ${sls:stage}-classroom-table
+    TABLE_CLASSROOMS: ${sls:stage}-qubo-classroom-table
     VALIDATE_TOKEN_FUNCTION: validateToken
     USER_SERVICE_NAME: qubo-auth-api
 
@@ -33,9 +33,22 @@ resources:
         AttributeDefinitions:
           - AttributeName: classroom_id
             AttributeType: S
+          - AttributeName: teacher_id
+            AttributeType: S
+          - AttributeName: name
+            AttributeType: S
         KeySchema:
           - AttributeName: classroom_id
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: teacher-name-index
+            KeySchema:
+              - AttributeName: teacher_id
+                KeyType: HASH
+              - AttributeName: name
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
         PointInTimeRecoverySpecification:
           PointInTimeRecoveryEnabled: true
