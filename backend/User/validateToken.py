@@ -88,5 +88,5 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Internal Server Error', 'details': str(e)})Add commentMore actions
+            'body': json.dumps({'error': 'Internal Server Error', 'details': str(e)})
         }
