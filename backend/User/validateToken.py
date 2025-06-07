@@ -79,7 +79,8 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'message': 'Token is valid',
                 'expiration': expiration,
-                'PK': token_data.get('PK')
+                'user_id': token_data.get('user_id'),
+                'role': token_data.get('role')
             })
         }
 
