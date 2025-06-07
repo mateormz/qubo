@@ -1,16 +1,16 @@
+import boto3Add commentMore actions
 from datetime import datetime
 import os
 import json
-from singleton import get_dynamodb  # Importar instancia Singleton
 
 def lambda_handler(event, context):
     try:
         print("[INFO] Received event:", json.dumps(event, indent=2))
 
-        # Obtener instancia Singleton de DynamoDB
-        dynamodb = get_dynamodb()
+        # Initialize DynamoDB
+        dynamodb = boto3.resource('dynamodb')
 
-        # Cargar variable de entorno
+        # Environment variable
         try:
             token_table_name = os.environ['TABLE_TOKENS']
             print("[INFO] Environment variable loaded successfully")
@@ -24,7 +24,7 @@ def lambda_handler(event, context):
 
         table = dynamodb.Table(token_table_name)
 
-        # Obtener token desde el body
+        # Get token from request body
         if not event.get('body'):
             return {
                 'statusCode': 400,
@@ -49,11 +49,11 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Token not provided'})
             }
 
-        # Consultar token en DynamoDB
+        # Get token from table (by primary key)
         print(f"[INFO] Getting token from table: {token}")
         response = table.get_item(Key={'token': token})
-        token_data = response.get('Item')
 
+        token_data = response.get('Item')
         if not token_data:
             return {
                 'statusCode': 403,
@@ -79,8 +79,7 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'message': 'Token is valid',
                 'expiration': expiration,
-                'user_id': token_data.get('user_id'),
-                'role': token_data.get('role')
+                'PK': token_data.get('PK')
             })
         }
 
@@ -89,5 +88,5 @@ def lambda_handler(event, context):
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Internal Server Error', 'details': str(e)})
+            'body': json.dumps({'error': 'Internal Server Error', 'details': str(e)})Add commentMore actions
         }
