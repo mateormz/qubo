@@ -25,11 +25,11 @@ provider:
     VALIDATE_TOKEN_FUNCTION: validateToken
 
 functions:
-  register:
-    handler: register.lambda_handler
+  registerTeacher:
+    handler: registerTeacher.lambda_handler
     events:
       - http:
-          path: auth/register
+          path: auth/register-teacher
           method: post
           cors: true
 
@@ -38,6 +38,14 @@ functions:
     events:
       - http:
           path: auth/login
+          method: post
+          cors: true
+
+  validateToken:
+    handler: validateToken.lambda_handler
+    events:
+      - http:
+          path: /token/validate
           method: post
           cors: true
 
