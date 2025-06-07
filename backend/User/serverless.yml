@@ -49,6 +49,14 @@ functions:
           method: post
           cors: true
 
+  getUserById:
+    handler: getUserById.lambda_handler
+    events:
+      - http:
+          path: auth/users/get/{user_id}
+          method: get
+          cors: true
+
 resources:
   Resources:
     AuthUsersTable:
