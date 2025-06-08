@@ -66,6 +66,22 @@ functions:
           method: post
           cors: true
 
+    updateStudentSkin:
+      handler: updateStudentSkin.lambda_handler
+      events:
+        - http:
+            path: auth/student/update-skin
+            method: post
+            cors: true
+
+  getStudentSkins:
+    handler: getStudentSkins.lambda_handler
+    events:
+      - http:
+          path: auth/student/skins
+          method: get
+          cors: true
+
 resources:
   Resources:
     AuthUsersTable:
