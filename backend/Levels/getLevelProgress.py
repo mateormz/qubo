@@ -1,7 +1,7 @@
 import json
 import os
 import boto3
-from common import validate_token
+from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -23,6 +23,7 @@ def lambda_handler(event, context):
             }
 
         level_progress = user_item.get('levelProgress', {})
+        level_progress = convert_decimal(level_progress)
 
         return {
             'statusCode': 200,
