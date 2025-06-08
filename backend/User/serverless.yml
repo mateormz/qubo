@@ -70,7 +70,7 @@ functions:
     handler: updateStudentSkin.lambda_handler
     events:
       - http:
-          path: auth/student/update-skin
+          path: auth/student/skin/{user_id}
           method: post
           cors: true
 
@@ -78,7 +78,7 @@ functions:
     handler: getStudentSkins.lambda_handler
     events:
       - http:
-          path: auth/student/skins
+          path: auth/student/skins/{user_id}
           method: get
           cors: true
 
