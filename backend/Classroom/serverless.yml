@@ -23,6 +23,15 @@ functions:
           path: classrooms/create
           method: post
           cors: true
+  
+  functions:
+  getClassroomsByTeacherId:
+    handler: getClassroomsByTeacherId.lambda_handler
+    events:
+      - http:
+          path: classrooms/teacher
+          method: get
+          cors: true
 
 resources:
   Resources:
