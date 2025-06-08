@@ -13,7 +13,7 @@ def lambda_handler(event, context):
         if 'statusCode' in user_info:
             return user_info
 
-        # Asegurar que accede solo a su propia cuenta
+        # Asegurar que accede solo a su propia cuenta (ahora sí se espera el user_id en path)
         error = ensure_user_ownership(event, user_info['user_id'])
         if error:
             return error
@@ -26,6 +26,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Only students can update their skin'})
             }
 
+        # Extraer el índice de skin del body
         body = json.loads(event.get('body', '{}'))
         skin_index = body.get('skin_index')
 
@@ -36,8 +37,9 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Missing skin_index'})
             }
 
+        # Obtener el user_id del path para realizar la actualización
+        user_id = event['pathParameters']['user_id']
         table = dynamodb.Table(os.environ['TABLE_USERS'])
-        user_id = user_info['user_id']
 
         # Actualizar la skin seleccionada
         table.update_item(
