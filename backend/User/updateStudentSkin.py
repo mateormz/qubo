@@ -1,7 +1,7 @@
 import json
 import os
 import boto3
-from common import validate_token, ensure_user_ownership
+from common import validate_token
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -12,11 +12,6 @@ def lambda_handler(event, context):
         user_info = validate_token(event, lambda_client)
         if 'statusCode' in user_info:
             return user_info
-
-        # Asegurar que accede solo a su propia cuenta (ahora sí se espera el user_id en path)
-        error = ensure_user_ownership(event, user_info['user_id'])
-        if error:
-            return error
 
         # Verificar que el usuario sea estudiante
         if user_info.get('role') != 'student':
@@ -37,8 +32,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Missing skin_index'})
             }
 
-        # Obtener el user_id del path para realizar la actualización
-        user_id = event['pathParameters']['user_id']
+        user_id = user_info['user_id']
         table = dynamodb.Table(os.environ['TABLE_USERS'])
 
         # Actualizar la skin seleccionada
