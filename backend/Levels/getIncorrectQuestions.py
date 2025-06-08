@@ -2,7 +2,7 @@ import json
 import os
 import boto3
 from boto3.dynamodb.conditions import Key
-from common import validate_token
+from common import validate_token, convert_decimal  
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -21,7 +21,7 @@ def lambda_handler(event, context):
             KeyConditionExpression=Key('user_id').eq(user_id)
         )
 
-        sessions = response.get('Items', [])
+        sessions = convert_decimal(response.get('Items', []))  
         incorrect_questions = []
 
         for session in sessions:
