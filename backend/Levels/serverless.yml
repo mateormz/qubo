@@ -1,5 +1,5 @@
 org: ${env:SLS_ORG}
-service: qubo-game-api
+service: qubo-games-api
 
 provider:
   name: aws
@@ -16,12 +16,31 @@ provider:
     TABLE_LEVELS: ${sls:stage}-qubo-levels-table
     TABLE_QUESTIONS: ${sls:stage}-qubo-questions-table
     TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions
+    TABLE_GAMES: ${sls:stage}-qubo-games-table
+    TABLE_USERS: ${sls:stage}-qubo-auth-user-table  
 
     # Token validation
     VALIDATE_TOKEN_FUNCTION: validateToken
     USER_SERVICE_NAME: qubo-auth-api
 
 functions:
+
+  ### Games ###
+  createGame:
+    handler: createGame.lambda_handler
+    events:
+      - http:
+          path: games
+          method: post
+          cors: true
+
+  listGames:
+    handler: listGames.lambda_handler
+    events:
+      - http:
+          path: games
+          method: get
+          cors: true
 
   ### Levels ###
   createLevel:
@@ -90,6 +109,14 @@ functions:
           method: get
           cors: true
 
+  getLevelProgress:
+    handler: getLevelProgress.lambda_handler
+    events:
+      - http:
+          path: games/levels/progress
+          method: get
+          cors: true
+
   getIncorrectQuestions:
     handler: getIncorrectQuestions.lambda_handler
     events:
@@ -100,6 +127,18 @@ functions:
 
 resources:
   Resources:
+
+    GamesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_GAMES}
+        AttributeDefinitions:
+          - AttributeName: game_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: game_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
 
     LevelsTable:
       Type: AWS::DynamoDB::Table
