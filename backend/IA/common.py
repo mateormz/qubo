@@ -7,7 +7,7 @@ def validate_token(event, lambda_client):
     except KeyError as env_error:
         return {
             'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
+            'headers': {'Content-Type': 'application/json'}, #a
             'body': json.dumps({'error': f"Missing environment variable: {str(env_error)}"})
         }
 
