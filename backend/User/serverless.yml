@@ -22,8 +22,12 @@ provider:
     SERVICE_NAME: qubo-auth-api
     STAGE: ${sls:stage}
 
-    # Function names
+    # Token validation
     VALIDATE_TOKEN_FUNCTION: validateToken
+
+    # Game service integration
+    GAMES_SERVICE_NAME: qubo-games-api
+    LIST_GAMES_FUNCTION: listGames
 
 functions:
   registerTeacher:

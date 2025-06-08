@@ -28,6 +28,7 @@ def lambda_handler(event, context):
 
         question_table = dynamodb.Table(os.environ['TABLE_QUESTIONS'])
         session_table = dynamodb.Table(os.environ['TABLE_GAME_SESSIONS'])
+        user_table = dynamodb.Table(os.environ['TABLE_USERS'])
 
         correct_count = 0
         results = []
@@ -54,6 +55,7 @@ def lambda_handler(event, context):
         passed = correct_count >= 6
         session_id = str(uuid.uuid4())
 
+        # Guardar sesión
         session_table.put_item(Item={
             'session_id': session_id,
             'user_id': user_id,
@@ -64,6 +66,20 @@ def lambda_handler(event, context):
             'results': results,
             'timestamp': datetime.utcnow().isoformat()
         })
+
+        # Si pasó, verificar y actualizar el progreso
+        if passed:
+            user_item = user_table.get_item(Key={'user_id': user_id}).get('Item')
+            current_progress = user_item.get('levelProgress', {})
+            current_level = current_progress.get(game_id, 1)
+
+            if level_number == current_level:
+                current_progress[game_id] = level_number + 1
+                user_table.update_item(
+                    Key={'user_id': user_id},
+                    UpdateExpression='SET levelProgress = :lp',
+                    ExpressionAttributeValues={':lp': current_progress}
+                )
 
         return {
             'statusCode': 200,
