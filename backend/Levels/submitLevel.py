@@ -3,7 +3,7 @@ import os
 import boto3
 import uuid
 from datetime import datetime
-from common import validate_token
+from common import validate_token, convert_decimal  # <- añadimos esto
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -81,14 +81,17 @@ def lambda_handler(event, context):
                     ExpressionAttributeValues={':lp': current_progress}
                 )
 
+        # Prepara respuesta segura para JSON
+        response_data = convert_decimal({
+            'sessionId': session_id,
+            'score': correct_count,
+            'passed': passed,
+            'incorrectQuestions': [r for r in results if not r['was_correct']]
+        })
+
         return {
             'statusCode': 200,
-            'body': json.dumps({
-                'sessionId': session_id,
-                'score': correct_count,
-                'passed': passed,
-                'incorrectQuestions': [r for r in results if not r['was_correct']]
-            })
+            'body': json.dumps(response_data)
         }
 
     except Exception as e:
