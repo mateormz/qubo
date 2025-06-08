@@ -1,7 +1,7 @@
 import json
 import os
 import boto3
-from common import validate_token
+from common import validate_token, convert_decimal 
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -14,10 +14,11 @@ def lambda_handler(event, context):
 
         table = dynamodb.Table(os.environ['TABLE_GAMES'])
         response = table.scan()
+        games = convert_decimal(response.get('Items', []))  
 
         return {
             'statusCode': 200,
-            'body': json.dumps({'games': response.get('Items', [])})
+            'body': json.dumps({'games': games})
         }
 
     except Exception as e:
