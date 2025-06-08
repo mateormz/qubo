@@ -1,0 +1,151 @@
+org: ${env:SLS_ORG}
+service: qubo-game-api
+
+provider:
+  name: aws
+  runtime: python3.9
+  iam:
+    role: ${env:AWS_ROLE_ARN}
+  memorySize: 1024
+  timeout: 29
+  environment:
+    SERVICE_NAME: qubo-game-api
+    STAGE: ${sls:stage}
+
+    # DynamoDB Tables
+    TABLE_LEVELS: ${sls:stage}-qubo-levels-table
+    TABLE_QUESTIONS: ${sls:stage}-qubo-questions-table
+    TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions
+
+    # Token validation
+    VALIDATE_TOKEN_FUNCTION: validateToken
+    USER_SERVICE_NAME: qubo-auth-api
+
+functions:
+
+  ### Levels ###
+  createLevel:
+    handler: createLevel.lambda_handler
+    events:
+      - http:
+          path: games/levels
+          method: post
+          cors: true
+
+  getLevel:
+    handler: getLevel.lambda_handler
+    events:
+      - http:
+          path: games/{game_id}/levels/{level_number}
+          method: get
+          cors: true
+
+  listLevels:
+    handler: listLevels.lambda_handler
+    events:
+      - http:
+          path: games/{game_id}/levels
+          method: get
+          cors: true
+
+  ### Questions ###
+  createQuestion:
+    handler: createQuestion.lambda_handler
+    events:
+      - http:
+          path: games/questions
+          method: post
+          cors: true
+
+  getQuestion:
+    handler: getQuestion.lambda_handler
+    events:
+      - http:
+          path: games/questions/{question_id}
+          method: get
+          cors: true
+
+  listQuestions:
+    handler: listQuestions.lambda_handler
+    events:
+      - http:
+          path: games/questions
+          method: get
+          cors: true
+
+  ### Game Sessions ###
+  submitLevel:
+    handler: submitLevel.lambda_handler
+    events:
+      - http:
+          path: games/{game_id}/levels/{level_number}/submit
+          method: post
+          cors: true
+
+  getUserSessions:
+    handler: getUserSessions.lambda_handler
+    events:
+      - http:
+          path: games/sessions/me
+          method: get
+          cors: true
+
+  getIncorrectQuestions:
+    handler: getIncorrectQuestions.lambda_handler
+    events:
+      - http:
+          path: games/sessions/me/incorrect
+          method: get
+          cors: true
+
+resources:
+  Resources:
+
+    LevelsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_LEVELS}
+        AttributeDefinitions:
+          - AttributeName: game_id
+            AttributeType: S
+          - AttributeName: level_number
+            AttributeType: N
+        KeySchema:
+          - AttributeName: game_id
+            KeyType: HASH
+          - AttributeName: level_number
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+    QuestionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_QUESTIONS}
+        AttributeDefinitions:
+          - AttributeName: question_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: question_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    GameSessionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_GAME_SESSIONS}
+        AttributeDefinitions:
+          - AttributeName: session_id
+            AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: session_id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: user_id-index
+            KeySchema:
+              - AttributeName: user_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
