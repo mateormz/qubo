@@ -2,7 +2,7 @@ import json
 import os
 import boto3
 from boto3.dynamodb.conditions import Key
-from common import validate_token, ensure_teacher, ensure_user_ownership
+from common import validate_token, ensure_teacher, ensure_user_ownership, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -44,7 +44,7 @@ def lambda_handler(event, context):
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps(item)
+            'body': json.dumps(convert_decimal(item))
         }
 
     except Exception as e:
