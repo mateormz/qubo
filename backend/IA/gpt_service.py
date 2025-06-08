@@ -20,13 +20,7 @@ class GPTService:
         prompt_template = f"""
         Genera 2 ejercicios de matemáticas para 2° de secundaria (Perú) sobre el tema: {tema}.
 
-        Requisitos:
-        1. Formato JSON:
-        - 6 ejercicios fáciles
-        - 7 ejercicios medios
-        - 7 ejercicios difíciles
-
-        2. Estructura cada ejercicio con:
+        Formato JSON por ejercicio:
         - pregunta
         - respuesta_correcta
         - es_multiple_choice
@@ -36,7 +30,7 @@ class GPTService:
         - concepto_principal
         - nivel
 
-        Usa contexto peruano. Responde solo con el JSON.
+        Responde solo con el JSON.
         """
 
         response = self.client.complete(
@@ -50,4 +44,12 @@ class GPTService:
         )
 
         content = response.choices[0].message.content
-        return json.loads(content)
+
+        if not content or not content.strip():
+            raise Exception("El modelo devolvió una respuesta vacía.")
+
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as e:
+            raise Exception(f"El modelo respondió con texto no válido como JSON: {content[:100]}... → Error: {e}")
+
