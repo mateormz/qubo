@@ -18,7 +18,7 @@ class GPTService:
 
     def generate_exercises(self, tema: str):
         prompt_template = f"""
-        Genera 20 ejercicios de matemáticas para 2° de secundaria (Perú) sobre el tema: {tema}.
+        Genera 2 ejercicios de matemáticas para 2° de secundaria (Perú) sobre el tema: {tema}.
 
         Requisitos:
         1. Formato JSON:
