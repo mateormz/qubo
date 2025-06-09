@@ -1,7 +1,13 @@
+org: ${env:SLS_ORG}
 service: qubo-skins-api
+
 provider:
   name: aws
   runtime: python3.9
+  iam:
+    role: ${env:AWS_ROLE_ARN}
+  memorySize: 1024
+  timeout: 29
   environment:
     STAGE: ${sls:stage}
     SKINS_TABLE: ${sls:stage}-skins-table
