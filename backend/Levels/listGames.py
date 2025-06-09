@@ -1,7 +1,8 @@
 import json
 import os
 import boto3
-from common import validate_token, convert_decimal 
+from collections import defaultdict
+from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -12,9 +13,28 @@ def lambda_handler(event, context):
         if 'statusCode' in user_info:
             return user_info
 
-        table = dynamodb.Table(os.environ['TABLE_GAMES'])
-        response = table.scan()
-        games = convert_decimal(response.get('Items', []))  
+        games_table = dynamodb.Table(os.environ['TABLE_GAMES'])
+        levels_table = dynamodb.Table(os.environ['TABLE_LEVELS'])
+
+        # Obtener todos los juegos
+        games_response = games_table.scan()
+        games = convert_decimal(games_response.get('Items', []))
+
+        # Obtener todos los niveles
+        levels_response = levels_table.scan()
+        levels = convert_decimal(levels_response.get('Items', []))
+
+        # Contar niveles por game_id
+        level_counts = defaultdict(int)
+        for level in levels:
+            game_id = level.get('game_id')
+            if game_id:
+                level_counts[game_id] += 1
+
+        # Asignar level_count a cada juego
+        for game in games:
+            game_id = game.get('game_id')
+            game['level_count'] = level_counts.get(game_id, 0)
 
         return {
             'statusCode': 200,
