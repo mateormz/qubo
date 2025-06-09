@@ -79,6 +79,7 @@ def lambda_handler(event, context):
             'role': 'student',
             'qu_coin': 0,
             'streak': 0,
+            'last_login_date': datetime.utcnow().strftime('%Y-%m-%d'),   # NUEVO CAMPO
             'classroom_id': classroom_id,
             'skinSeleccionada': 0,
             'skinsDesbloqueadas': [0],  # skin por defecto
