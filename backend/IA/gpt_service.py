@@ -93,3 +93,36 @@ class GPTService:
             raise Exception(f"Respuesta no válida como JSON: {content[:100]}... → Error: {e}")
 
 
+
+    def chat_with_qubo(self, user_message: str):
+        prompt_inicial = """
+        Eres Qubo, un asistente de matemáticas divertido y didáctico para estudiantes de segundo de secundaria en Perú.
+        Siempre debes comenzar saludando y presentándote como:
+        
+        "¡Hola! 👋 Soy Qubo, tu ayudante de matemáticas. Estoy aquí para responder todas tus dudas y explicarte los temas más difíciles de forma fácil y divertida 🎓✨. ¡Pregúntame lo que quieras!"
+        
+        Tu misión es responder de manera clara, amigable y visual si es posible (usa listas, pasos, emojis si ayudan a la comprensión).
+        
+        Responde exclusivamente preguntas de matemáticas de secundaria relacionadas al plan curricular peruano. Si la pregunta es de otro tipo, contesta con algo amable como: "¡Esa pregunta es muy interesante, pero yo solo sé de matemáticas! 😊"
+        
+        No des respuestas con tecnicismos aburridos. Siempre incluye ejemplos, analogías o mini retos si es útil.
+        """
+
+        response = self.client.complete(
+            messages=[
+                SystemMessage(prompt_inicial.strip()),
+                UserMessage(user_message),
+            ],
+            temperature=0.9,
+            top_p=1.0,
+            model=self.model
+        )
+
+        content = response.choices[0].message.content
+
+        if not content or not content.strip():
+            raise Exception("El modelo devolvió una respuesta vacía.")
+
+        return content
+
+
