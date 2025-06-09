@@ -1,0 +1,39 @@
+service: qubo-skins-api
+provider:
+  name: aws
+  runtime: python3.9
+  environment:
+    STAGE: ${sls:stage}
+    SKINS_TABLE: ${sls:stage}-skins-table
+    SKINS_BUCKET: qubo-skins-dev
+
+functions:
+  postSkin:
+    handler: postSkin.lambda_handler
+    events:
+      - http:
+          path: skin
+          method: post
+          cors: true
+
+  getSkins:
+    handler: getSkins.lambda_handler
+    events:
+      - http:
+          path: skins
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    SkinsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.SKINS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: skin_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: skin_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
