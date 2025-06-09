@@ -1,11 +1,10 @@
-org: ${env:SLS_ORG}
 service: qubo-auth-api
 
 provider:
   name: aws
   runtime: python3.9
   iam:
-    role: ${env:AWS_ROLE_ARN}
+    role: arn:aws:iam::703649452276:role/LabRole
   memorySize: 1024
   timeout: 29
   environment:
@@ -80,6 +79,15 @@ functions:
       - http:
           path: auth/student/skins/{user_id}
           method: get
+          cors: true
+
+  #NUEVA FUNCIÓN: updateStudentCoins
+  updateStudentCoins:
+    handler: updateStudentCoins.lambda_handler
+    events:
+      - http:
+          path: auth/student/coins/{user_id}
+          method: post
           cors: true
 
 resources:
