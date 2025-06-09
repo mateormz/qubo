@@ -22,3 +22,11 @@ functions:
           path: ia/generate-exercises
           method: post
           cors: true
+
+  generateGuide:
+    handler: generateGuide.lambda_handler
+    events:
+      - http:
+          path: ia/generate-guide
+          method: post
+          cors: true

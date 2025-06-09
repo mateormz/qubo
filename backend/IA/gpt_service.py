@@ -53,3 +53,43 @@ class GPTService:
         except json.JSONDecodeError as e:
             raise Exception(f"El modelo respondió con texto no válido como JSON: {content[:100]}... → Error: {e}")
 
+    def generate_resolution_guide(self, text: str, topic: str, correct_answer: str):
+        prompt = f"""
+        Dada la siguiente pregunta:
+
+        "{text}"
+
+        Tema: {topic}
+        Respuesta correcta: "{correct_answer}" (usa solo para guiar la solución, **no la muestres**)
+
+        Genera una guía pedagógica paso a paso para que el estudiante pueda resolverla correctamente por sí mismo,
+        sin revelar directamente la respuesta. La guía debe incluir:
+
+        - "steps": Una lista de pasos claros para resolver el problema
+        - "tips": Consejos o pistas que ayuden a razonar la respuesta
+        - "concept": El concepto matemático principal involucrado
+
+        Responde solamente con un JSON válido con esa estructura.
+        """
+
+        response = self.client.complete(
+            messages=[
+                SystemMessage("Eres un experto en pedagogía matemática para niños de secundaria en Perú."),
+                UserMessage(prompt),
+            ],
+            temperature=1.0,
+            top_p=1.0,
+            model=self.model
+        )
+
+        content = response.choices[0].message.content
+
+        if not content or not content.strip():
+            raise Exception("El modelo devolvió una respuesta vacía.")
+
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as e:
+            raise Exception(f"Respuesta no válida como JSON: {content[:100]}... → Error: {e}")
+
+
