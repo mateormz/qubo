@@ -1,0 +1,40 @@
+org: ${env:SLS_ORG}
+service: qubo-ia-api
+
+provider:
+  name: aws
+  runtime: python3.9
+  memorySize: 1024
+  timeout: 29  # ← evita el warning por el límite de API Gateway
+  iam:
+    role: ${env:AWS_ROLE_ARN}  # ← usa un rol predefinido con permisos adecuados
+  environment:
+    USER_SERVICE_NAME: qubo-auth-api
+    STAGE: ${sls:stage}
+    GITHUB_TOKEN: ${env:GITHUB_TOKEN}
+    VALIDATE_TOKEN_FUNCTION: validateToken
+
+functions:
+  generateExercises:
+    handler: generateExercises.lambda_handler
+    events:
+      - http:
+          path: ia/generate-exercises
+          method: post
+          cors: true
+
+  generateGuide:
+    handler: generateGuide.lambda_handler
+    events:
+      - http:
+          path: ia/generate-guide
+          method: post
+          cors: true
+
+  chatQubo:
+    handler: chatQubo.lambda_handler
+    events:
+      - http:
+          path: ia/chat-qubo
+          method: post
+          cors: true
