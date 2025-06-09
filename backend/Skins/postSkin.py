@@ -32,7 +32,6 @@ def lambda_handler(event, context):
         item = {
             'skin_id': new_skin_id,
             'name': name,
-            'description': description,
             'price': int(price),
             'image_url': image_url,
             'created_at': datetime.utcnow().isoformat()
