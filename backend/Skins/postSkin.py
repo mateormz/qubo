@@ -8,7 +8,7 @@ dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
     try:
-        table = dynamodb.Table(os.environ['TABLE_SKINS'])
+        table = dynamodb.Table(os.environ['SKINS_TABLE'])
         body = json.loads(event.get('body', '{}'))
 
         name = body.get('name')
