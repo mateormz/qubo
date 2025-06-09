@@ -89,6 +89,24 @@ functions:
           path: auth/student/coins/{user_id}
           method: post
           cors: true
+  
+  #NUEVAS FUNCIONES: RACHAS
+  updateStudentStreak:
+    handler: updateStudentStreak.lambda_handler
+    events:
+      - http:
+          path: auth/student/streak/{user_id}
+          method: post
+          cors: true
+
+  getStudentStreak:
+    handler: getStudentStreak.lambda_handler
+    events:
+      - http:
+          path: auth/student/streak/{user_id}
+          method: get
+          cors: true
+
 
 resources:
   Resources:
