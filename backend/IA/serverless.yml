@@ -5,7 +5,7 @@ provider:
   name: aws
   runtime: python3.9
   memorySize: 1024
-  timeout: 2000  # ← evita el warning por el límite de API Gateway
+  timeout: 800  # ← evita el warning por el límite de API Gateway
   iam:
     role: ${env:AWS_ROLE_ARN}  # ← usa un rol predefinido con permisos adecuados
   environment:
