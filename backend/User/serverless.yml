@@ -14,6 +14,7 @@ provider:
     TABLE_USERS: ${sls:stage}-qubo-auth-user-table
     TABLE_TOKENS: ${sls:stage}-qubo-tokens-table
     TABLE_CLASSROOMS: ${sls:stage}-qubo-classroom-table
+    TABLE_GAMES: ${sls:stage}-qubo-games-table   
 
     # Index
     INDEX_EMAIL_USERS: email-index
@@ -22,8 +23,12 @@ provider:
     SERVICE_NAME: qubo-auth-api
     STAGE: ${sls:stage}
 
-    # Function names
+    # Token validation
     VALIDATE_TOKEN_FUNCTION: validateToken
+
+    # Game service integration
+    GAMES_SERVICE_NAME: qubo-games-api
+    LIST_GAMES_FUNCTION: listGames
 
 functions:
   registerTeacher:
