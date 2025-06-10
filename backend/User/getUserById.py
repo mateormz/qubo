@@ -2,7 +2,7 @@ import json
 import os
 import boto3
 from boto3.dynamodb.conditions import Key
-from common import validate_token, ensure_teacher, ensure_user_ownership, convert_decimal
+from common import validate_token, ensure_user_ownership, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -17,15 +17,8 @@ def lambda_handler(event, context):
         if error:
             return error
 
-        try:
-            user_table_name = os.environ['TABLE_USERS']
-            user_table = dynamodb.Table(user_table_name)
-        except KeyError as e:
-            return {
-                'statusCode': 500,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': f'Missing env var: {str(e)}'})
-            }
+        user_table = dynamodb.Table(os.environ['TABLE_USERS'])
+        games_table = dynamodb.Table(os.environ['TABLE_GAMES'])
 
         user_id = event['pathParameters']['user_id']
 
@@ -40,6 +33,25 @@ def lambda_handler(event, context):
             }
 
         item.pop('password_hash', None)
+
+        level_progress = item.get('levelProgress', {})
+        updated = False
+
+        # Obtener todos los game_id existentes
+        all_games = games_table.scan().get('Items', [])
+        for game in all_games:
+            game_id = game['game_id']
+            if game_id not in level_progress:
+                level_progress[game_id] = 1
+                updated = True
+
+        if updated:
+            item['levelProgress'] = level_progress
+            user_table.update_item(
+                Key={'user_id': user_id},
+                UpdateExpression='SET levelProgress = :lp',
+                ExpressionAttributeValues={':lp': level_progress}
+            )
 
         return {
             'statusCode': 200,
