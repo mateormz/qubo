@@ -78,7 +78,7 @@ def lambda_handler(event, context):
             'password_hash': password_hash,
             'role': 'student',
             'qu_coin': 0,
-            'streak': 0,
+            'streak': 1,
             'last_login_date': datetime.utcnow().strftime('%Y-%m-%d'),   # NUEVO CAMPO
             'classroom_id': classroom_id,
             'skinSeleccionada': "skin1",
