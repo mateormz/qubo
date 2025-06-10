@@ -1,10 +1,11 @@
+org: ${env:SLS_ORG}
 service: qubo-auth-api
 
 provider:
   name: aws
   runtime: python3.9
   iam:
-    role: arn:aws:iam::703649452276:role/LabRole
+    role: ${env:AWS_ROLE_ARN}
   memorySize: 1024
   timeout: 29
   environment:
