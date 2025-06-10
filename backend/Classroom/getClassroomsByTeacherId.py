@@ -3,10 +3,12 @@ import os
 import boto3
 from boto3.dynamodb.conditions import Key
 from common import validate_token, ensure_teacher
+from cors_utils import cors_handler, respond
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
 
+@cors_handler
 def lambda_handler(event, context):
     try:
         # Validar token y rol
@@ -29,15 +31,7 @@ def lambda_handler(event, context):
 
         classrooms = response.get('Items', [])
 
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps(classrooms)
-        }
+        return respond(200, classrooms)
 
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Internal Server Error', 'details': str(e)})
-        }
+        return respond(500, {'error': 'Internal Server Error', 'details': str(e)})
