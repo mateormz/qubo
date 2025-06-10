@@ -1,0 +1,52 @@
+org: ${env:SLS_ORG}
+service: qubo-feedback-api
+
+provider:
+  name: aws
+  runtime: python3.12
+  iam:
+    role: ${env:AWS_ROLE_ARN}
+  memorySize: 1024
+  timeout: 29
+  environment:
+    STAGE: ${sls:stage}
+    SERVICE_NAME: qubo-games-api              # Servicio que contiene getQuestion
+    IA_SERVICE_NAME: qubo-ia-api             # Servicio que contiene generateGuide
+    VALIDATE_TOKEN_FUNCTION: validateToken   # Función que valida tokens
+    USER_SERVICE_NAME: qubo-auth-api         # Para construir el nombre de función validate
+    TABLE_FEEDBACK: ${sls:stage}-qubo-feedback
+    TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions
+    TABLE_QUESTIONS: ${sls:stage}-qubo-questions-table
+
+functions:
+  generateFeedback:
+    handler: generateFeedback.lambda_handler
+    events:
+      - http:
+          path: feedback/generate
+          method: post
+          cors: true
+
+  getFeedback:
+    handler: getFeedback.lambda_handler
+    events:
+      - http:
+          path: feedback/{session_id}
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    FeedbackTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_FEEDBACK}
+        AttributeDefinitions:
+          - AttributeName: session_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: session_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
