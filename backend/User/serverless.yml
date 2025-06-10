@@ -82,6 +82,14 @@ functions:
           method: get
           cors: true
 
+  unlockStudentSkin:
+    handler: unlockStudentSkin.lambda_handler
+    events:
+      - http:
+          path: auth/student/skins/{user_id}
+          method: post
+          cors: true
+
 resources:
   Resources:
     AuthUsersTable:
