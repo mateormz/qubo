@@ -46,8 +46,8 @@ def lambda_handler(event, context):
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json'},
             'body': json.dumps({
-                'skin_selected': student.get('skin_selected', 0),
-                'skins_unlocked': student.get('skins_unlocked', [0])
+                'skin_selected': student.get('skinSeleccionada', "skin1"),
+                'skins_unlocked': student.get('skinsDesbloqueadas', ["skin1"])
             })
         }
 
