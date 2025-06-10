@@ -81,7 +81,6 @@ functions:
           method: get
           cors: true
 
-  #NUEVA FUNCIÓN: updateStudentCoins
   updateStudentCoins:
     handler: updateStudentCoins.lambda_handler
     events:
@@ -90,7 +89,6 @@ functions:
           method: post
           cors: true
   
-  #NUEVAS FUNCIONES: RACHAS
   updateStudentStreak:
     handler: updateStudentStreak.lambda_handler
     events:
@@ -107,6 +105,13 @@ functions:
           method: get
           cors: true
 
+  unlockStudentSkin:
+    handler: unlockStudentSkin.lambda_handler
+    events:
+      - http:
+          path: auth/student/skins/{user_id}
+          method: post
+          cors: true
 
 resources:
   Resources:
