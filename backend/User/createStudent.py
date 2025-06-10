@@ -57,13 +57,27 @@ def lambda_handler(event, context):
         # Verificar existencia del classroom
         class_result = classroom_table.get_item(Key={'classroom_id': classroom_id})
         classroom = class_result.get('Item')
-
         if not classroom:
             return {
                 'statusCode': 404,
                 'headers': {'Content-Type': 'application/json'},
                 'body': json.dumps({'error': 'Classroom not found'})
             }
+
+        # Obtener lista de juegos
+        try:
+            list_games_function = f"{os.environ['GAMES_SERVICE_NAME']}-{os.environ['STAGE']}-{os.environ['LIST_GAMES_FUNCTION']}"
+            games_response = lambda_client.invoke(
+                FunctionName=list_games_function,
+                InvocationType='RequestResponse',
+                Payload=json.dumps({'headers': event.get('headers', {})})
+            )
+            games_payload = json.loads(games_response['Payload'].read())
+            games_data = json.loads(games_payload['body']).get('games', []) if games_payload.get('statusCode') == 200 else []
+        except Exception as e:
+            games_data = []
+
+        level_progress = {game['game_id']: 1 for game in games_data}
 
         # Crear estudiante
         user_id = str(uuid.uuid4())
@@ -82,13 +96,15 @@ def lambda_handler(event, context):
             'last_login_date': datetime.utcnow().strftime('%Y-%m-%d'),   # NUEVO CAMPO
             'classroom_id': classroom_id,
             'skinSeleccionada': "skin1",
-                'skinsDesbloqueadas': ["skin1"],
+            'skinsDesbloqueadas': ["skin1"],
+            'levelProgress': level_progress,
+
             'created_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         }
 
         user_table.put_item(Item=user_item)
 
-        # Agregar estudiante al array de la clase (si no está)
+        # Agregar estudiante a la clase
         classroom_table.update_item(
             Key={'classroom_id': classroom_id},
             UpdateExpression="SET students = list_append(if_not_exists(students, :empty_list), :student_id)",
@@ -108,6 +124,8 @@ def lambda_handler(event, context):
                 'classroom_id': classroom_id,
                 'skinSeleccionada': "skin1",
                 'skinsDesbloqueadas': ["skin1"]
+                'levelProgress': level_progress
+
             })
         }
 
