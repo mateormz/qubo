@@ -1,7 +1,7 @@
 import json
 import os
 import boto3
-from common import validate_token, ensure_user_ownership
+from common import validate_token, ensure_user_ownership, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 lambda_client = boto3.client('lambda')
@@ -23,35 +23,34 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 403,
                 'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Only students can update their skin'})
+                'body': json.dumps({'error': 'Only students can access their streak'})
             }
 
-        # Extraer skin seleccionada desde el body
-        body = json.loads(event.get('body', '{}'))
-        skin_selected = body.get('skin_selected')
-
-        if not skin_selected:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Missing skin_selected'})
-            }
-
-        # Obtener el user_id desde los path parameters
+        # Obtener el user_id del path
         user_id = event['pathParameters']['user_id']
         table = dynamodb.Table(os.environ['TABLE_USERS'])
 
-        # Actualizar el campo skinSeleccionada en la base de datos
-        table.update_item(
-            Key={'user_id': user_id},
-            UpdateExpression='SET skinSeleccionada = :s',
-            ExpressionAttributeValues={':s': skin_selected}
-        )
+        # Obtener datos del estudiante
+        response = table.get_item(Key={'user_id': user_id})
+        student = response.get('Item')
+
+        if not student:
+            return {
+                'statusCode': 404,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'error': 'Student not found'})
+            }
+
+        streak = student.get('streak', 0)
+        last_login_date = student.get('last_login_date', None)
 
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'message': 'Skin updated successfully'})
+            'body': json.dumps({
+                'streak': convert_decimal(streak),
+                'last_login_date': last_login_date
+            })
         }
 
     except Exception as e:
