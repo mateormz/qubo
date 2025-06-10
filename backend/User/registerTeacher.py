@@ -6,89 +6,67 @@ import os
 from boto3.dynamodb.conditions import Key
 import json
 
+from cors_utils import cors_handler, respond
+
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+@cors_handler
 def lambda_handler(event, context):
     try:
         print("[INFO] Received event:", json.dumps(event, indent=2))
 
         dynamodb = boto3.resource('dynamodb')
 
+        # Carga de variables de entorno
         try:
-            user_table_name = os.environ['TABLE_USERS']
+            user_table_name  = os.environ['TABLE_USERS']
             token_table_name = os.environ['TABLE_TOKENS']
-            email_index = os.environ['INDEX_EMAIL_USERS']
-            print("[INFO] Environment variables loaded successfully")
+            email_index      = os.environ['INDEX_EMAIL_USERS']
         except KeyError as env_error:
-            return {
-                'statusCode': 500,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': f"Missing environment variable: {str(env_error)}"})
-            }
+            return respond(500, {"error": f"Missing environment variable: {str(env_error)}"})
 
-        user_table = dynamodb.Table(user_table_name)
+        user_table  = dynamodb.Table(user_table_name)
         token_table = dynamodb.Table(token_table_name)
 
+        # Verifica que exista body
         if 'body' not in event or not event['body']:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Request body is missing'})
-            }
+            return respond(400, {"error": "Request body is missing"})
 
+        # Parse JSON
         try:
             body = json.loads(event['body'])
-        except json.JSONDecodeError as e:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Invalid JSON in request body'})
-            }
+        except json.JSONDecodeError:
+            return respond(400, {"error": "Invalid JSON in request body"})
 
-        role = body.get('role')
-        if role != 'teacher':
-            return {
-                'statusCode': 403,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'Only teachers can register at this time'})
-            }
+        # Solo teachers
+        if body.get('role') != 'teacher':
+            return respond(403, {"error": "Only teachers can register at this time"})
 
-        email = body.get('email')
-        password = body.get('password')
-        name = body.get('name')
-        lastName = body.get('lastName')
-        dni = body.get('dni')
-        phoneNumber = body.get('phoneNumber')
+        # Campos obligatorios
+        missing = [f for f in ['email','password','name','lastName','dni','phoneNumber'] if not body.get(f)]
+        if missing:
+            return respond(400, {"error": f"Missing required fields: {', '.join(missing)}"})
 
-        # Validación de campos obligatorios
-        missing_fields = []
-        for field in ['email', 'password', 'name', 'lastName', 'dni', 'phoneNumber']:
-            if not body.get(field):
-                missing_fields.append(field)
+        email       = body['email']
+        password    = body['password']
+        name        = body['name']
+        lastName    = body['lastName']
+        dni         = body['dni']
+        phoneNumber = body['phoneNumber']
 
-        if missing_fields:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': f"Missing required fields: {', '.join(missing_fields)}"})
-            }
-
-        # Validar duplicado
-        response = user_table.query(
+        # Evitar duplicados
+        resp = user_table.query(
             IndexName=email_index,
             KeyConditionExpression=Key('email').eq(email)
         )
-        if response['Items']:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json'},
-                'body': json.dumps({'error': 'The email is already registered'})
-            }
+        if resp.get('Items'):
+            return respond(400, {"error": "The email is already registered"})
 
-        # Crear usuario teacher
+        # Crear usuario
         user_id = str(uuid.uuid4())
-        item = {
+        user_table.put_item(Item={
             'user_id': user_id,
             'email': email,
             'password_hash': hash_password(password),
@@ -96,39 +74,26 @@ def lambda_handler(event, context):
             'lastName': lastName,
             'dni': dni,
             'phoneNumber': phoneNumber,
-            'role': role,
+            'role': body['role'],
             'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        }
-
-        user_table.put_item(Item=item)
+        })
 
         # Crear token
-        token = str(uuid.uuid4())
+        token      = str(uuid.uuid4())
         expiration = (datetime.now() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S')
+        token_table.put_item(Item={
+            'token': token,
+            'expiration': expiration,
+            'user_id': user_id,
+            'role': body['role']
+        })
 
-        token_table.put_item(
-            Item={
-                'token': token,
-                'expiration': expiration,
-                'user_id': user_id,
-                'role': role
-            }
-        )
-
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({
-                'token': token,
-                'expires': expiration,
-                'user_id': user_id,
-                'role': role
-            })
-        }
+        return respond(200, {
+            'token': token,
+            'expires': expiration,
+            'user_id': user_id,
+            'role': body['role']
+        })
 
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Internal Server Error', 'details': str(e)})
-        }
+        return respond(500, {"error": "Internal Server Error", "details": str(e)})
