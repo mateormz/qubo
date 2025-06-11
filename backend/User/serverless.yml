@@ -82,6 +82,38 @@ functions:
           method: get
           cors: true
 
+  updateStudentCoins:
+    handler: updateStudentCoins.lambda_handler
+    events:
+      - http:
+          path: auth/student/coins/{user_id}
+          method: post
+          cors: true
+  
+  updateStudentStreak:
+    handler: updateStudentStreak.lambda_handler
+    events:
+      - http:
+          path: auth/student/streak/{user_id}
+          method: post
+          cors: true
+
+  getStudentStreak:
+    handler: getStudentStreak.lambda_handler
+    events:
+      - http:
+          path: auth/student/streak/{user_id}
+          method: get
+          cors: true
+
+  unlockStudentSkin:
+    handler: unlockStudentSkin.lambda_handler
+    events:
+      - http:
+          path: auth/student/skins/{user_id}
+          method: post
+          cors: true
+
 resources:
   Resources:
     AuthUsersTable:

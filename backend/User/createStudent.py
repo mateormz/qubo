@@ -78,10 +78,11 @@ def lambda_handler(event, context):
             'password_hash': password_hash,
             'role': 'student',
             'qu_coin': 0,
-            'streak': 0,
+            'streak': 1,
+            'last_login_date': datetime.utcnow().strftime('%Y-%m-%d'),   # NUEVO CAMPO
             'classroom_id': classroom_id,
-            'skinSeleccionada': 0,
-            'skinsDesbloqueadas': [0],  # skin por defecto
+            'skinSeleccionada': "skin1",
+                'skinsDesbloqueadas': ["skin1"],
             'created_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         }
 
@@ -105,8 +106,8 @@ def lambda_handler(event, context):
                 'email': email,
                 'role': 'student',
                 'classroom_id': classroom_id,
-                'skinSeleccionada': 0,
-                'skinsDesbloqueadas': [0]
+                'skinSeleccionada': "skin1",
+                'skinsDesbloqueadas': ["skin1"]
             })
         }
 
