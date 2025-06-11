@@ -1,4 +1,4 @@
-<h1 align="center">🧠 QUBO — Plataforma Web para Aprender Matemática Jugando</h1>
+<h1 align="center">🧠 QUBO — App para Aprender Matemática Jugando</h1>
 
 QUBO es una plataforma educativa gamificada que permite a estudiantes de secundaria practicar matemáticas a través de minijuegos, desafíos diarios y una mascota virtual personalizable. También ofrece a los profesores herramientas para asignar actividades, monitorear el avance y dar retroalimentación individual.
 
