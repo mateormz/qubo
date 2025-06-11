@@ -123,7 +123,7 @@ def lambda_handler(event, context):
                 'role': 'student',
                 'classroom_id': classroom_id,
                 'skinSeleccionada': "skin1",
-                'skinsDesbloqueadas': ["skin1"]
+                'skinsDesbloqueadas': ["skin1"],
                 'levelProgress': level_progress
 
             })
