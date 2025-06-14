@@ -51,7 +51,8 @@ def create_custom_level(event, context):
             'game_type': game_type,
             'description': description,
             'name': name,
-            'questions_ids': questions_ids
+            'questions_ids': questions_ids,
+            'submissions': []  # Nueva lista de submissions vacía
         })
 
         return {
