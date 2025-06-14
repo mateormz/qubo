@@ -129,19 +129,6 @@ functions:
 
 resources:
   Resources:
-
-    ClassroomsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ${self:provider.environment.TABLE_CLASSROOMS}
-        AttributeDefinitions:
-          - AttributeName: classroom_id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: classroom_id
-            KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
-
     AssignmentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
