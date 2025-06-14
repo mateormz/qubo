@@ -15,9 +15,9 @@ def get_incorrect_questions_by_submit_id(event, context):
             return user_info
 
         user_id = user_info['user_id']
-        submit_id = event['pathParameters'].get('submit_id')
-        if not submit_id:
-            return {'statusCode': 400, 'body': json.dumps({'error': 'submit_id is required'})}
+         session_id = event['pathParameters'].get('session_id')
+        if not session_id:
+            return {'statusCode':400,'body':json.dumps({'error':'session_id is required'})}
 
         table = dynamodb.Table(os.environ['TABLE_SESSIONS'])
         resp = table.query(

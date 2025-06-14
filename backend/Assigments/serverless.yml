@@ -114,7 +114,7 @@ functions:
     handler: Assignments/getIncorrectQuestionsBySubmitId.lambda_handler
     events:
       - http:
-          path: sessions/{submit_id}/incorrect-questions
+          path: sessions/{session_id}/incorrect-questions
           method: get
           cors: true
 
