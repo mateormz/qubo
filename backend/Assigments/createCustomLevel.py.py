@@ -11,7 +11,6 @@ def create_custom_level(event, context):
         if 'statusCode' in user_info:
             return user_info
 
-        # Verificar que el usuario sea profesor
         if user_info.get('role') != 'teacher':
             return {
                 'statusCode': 403,
@@ -20,10 +19,10 @@ def create_custom_level(event, context):
 
         body = json.loads(event.get('body', '{}'))
         assignment_id = body.get('assignment_id')
-        game_type = body.get('game_type')  # Tipo de juego (ej. "GameJump")
+        game_type = body.get('game_type')
         description = body.get('description')
         name = body.get('name')
-        questions_ids = body.get('questions_ids')  # Lista de IDs de las preguntas
+        questions_ids = body.get('questions_ids')
 
         if not assignment_id or not game_type or not name or not isinstance(questions_ids, list) or len(questions_ids) == 0:
             return {
@@ -31,7 +30,7 @@ def create_custom_level(event, context):
                 'body': json.dumps({'error': 'assignment_id, game_type, name, and questions_ids are required'})
             }
 
-        # Verificar que el assignment_id exista
+        # Verificar que exista el assignment
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
         assignment_response = assignments_table.get_item(Key={'assignment_id': assignment_id})
 
@@ -41,9 +40,9 @@ def create_custom_level(event, context):
                 'body': json.dumps({'error': f'Assignment with ID {assignment_id} not found'})
             }
 
-        # Crear un nuevo nivel personalizado
+        # Crear el nuevo nivel personalizado
         custom_levels_table = dynamodb.Table(os.environ['TABLE_CUSTOM_LEVELS'])
-        level_id = str(boto3.utils.uuid.uuid4())  # Crear ID único para el nivel
+        level_id = str(boto3.utils.uuid.uuid4())
 
         custom_levels_table.put_item(Item={
             'level_id': level_id,
@@ -52,8 +51,18 @@ def create_custom_level(event, context):
             'description': description,
             'name': name,
             'questions_ids': questions_ids,
-            'submissions': []  # Nueva lista de submissions vacía
+            'submissions': []
         })
+
+        # Actualizar la lista de niveles del assignment
+        assignments_table.update_item(
+            Key={'assignment_id': assignment_id},
+            UpdateExpression="SET level_ids = list_append(if_not_exists(level_ids, :empty_list), :new_level)",
+            ExpressionAttributeValues={
+                ':new_level': [level_id],
+                ':empty_list': []
+            }
+        )
 
         return {
             'statusCode': 201,

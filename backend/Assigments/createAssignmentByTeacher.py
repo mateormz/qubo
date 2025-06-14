@@ -20,12 +20,18 @@ def create_assignment_by_teacher(event, context):
         body = json.loads(event.get('body', '{}'))
         classroom_id = body.get('classroom_id')
         game_name = body.get('game_name')
-        questions = body.get('questions')
+        level_ids = body.get('level_ids', [])
 
-        if not classroom_id or not game_name or not isinstance(questions, list) or len(questions) < 1:
+        if not classroom_id or not game_name:
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': 'classroom_id, game_name and at least 1 question are required'})
+                'body': json.dumps({'error': 'classroom_id and game_name are required'})
+            }
+
+        if not isinstance(level_ids, list):
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'level_ids must be a list'})
             }
 
         # Verificar que el classroom_id exista
@@ -38,16 +44,16 @@ def create_assignment_by_teacher(event, context):
                 'body': json.dumps({'error': f'Classroom with ID {classroom_id} not found'})
             }
 
-        # Crear un nuevo assignment en la tabla de asignaciones
+        # Crear un nuevo assignment
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
-        assignment_id = str(boto3.utils.uuid.uuid4())  # Crear ID único para el assignment
+        assignment_id = str(boto3.utils.uuid.uuid4())
 
         assignments_table.put_item(Item={
             'assignment_id': assignment_id,
             'teacher_id': user_info.get('user_id'),
             'classroom_id': classroom_id,
             'game_name': game_name,
-            'questions': questions
+            'level_ids': level_ids  # lista vacía si no se mandó
         })
 
         return {
