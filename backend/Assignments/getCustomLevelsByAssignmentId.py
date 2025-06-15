@@ -1,6 +1,7 @@
 import json
 import os
 import boto3
+from boto3.dynamodb.conditions import Key  # Asegúrate de importar esto
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -14,10 +15,11 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'assignment_id is required'})
             }
 
-        # Recuperar los niveles personalizados por assignment_id
+        # Recuperar los niveles personalizados por assignment_id usando el índice
         custom_levels_table = dynamodb.Table(os.environ['TABLE_CUSTOM_LEVELS'])
         response = custom_levels_table.query(
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('assignment_id').eq(assignment_id)
+            IndexName='assignment_id-index',
+            KeyConditionExpression=Key('assignment_id').eq(assignment_id)
         )
 
         return {
