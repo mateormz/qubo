@@ -25,10 +25,10 @@ def lambda_handler(event, context):
         name = body.get('name')
         questions_ids = body.get('questions_ids')
 
-        if not assignment_id or not game_type or not name or not isinstance(questions_ids, list) or len(questions_ids) == 0:
+        if not assignment_id or not game_type or not name or not isinstance(questions_ids, list):
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': 'assignment_id, game_type, name, and questions_ids are required'})
+                'body': json.dumps({'error': 'assignment_id, game_type, name, and questions_ids (as list) are required'})
             }
 
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
