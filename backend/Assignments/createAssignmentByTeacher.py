@@ -5,7 +5,7 @@ from common import validate_token
 
 dynamodb = boto3.resource('dynamodb')
 
-def create_assignment_by_teacher(event, context):
+def lambda_handler(event, context):
     try:
         user_info = validate_token(event)
         if 'statusCode' in user_info:
