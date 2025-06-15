@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 import boto3
 from common import validate_token
 
@@ -30,7 +31,6 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'assignment_id, game_type, name, and questions_ids are required'})
             }
 
-        # Verificar que exista el assignment
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
         assignment_response = assignments_table.get_item(Key={'assignment_id': assignment_id})
 
@@ -40,9 +40,8 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': f'Assignment with ID {assignment_id} not found'})
             }
 
-        # Crear el nuevo nivel personalizado
         custom_levels_table = dynamodb.Table(os.environ['TABLE_CUSTOM_LEVELS'])
-        level_id = str(boto3.utils.uuid.uuid4())
+        level_id = str(uuid.uuid4())
 
         custom_levels_table.put_item(Item={
             'level_id': level_id,
@@ -54,7 +53,6 @@ def lambda_handler(event, context):
             'submissions': []
         })
 
-        # Actualizar la lista de niveles del assignment
         assignments_table.update_item(
             Key={'assignment_id': assignment_id},
             UpdateExpression="SET level_ids = list_append(if_not_exists(level_ids, :empty_list), :new_level)",
