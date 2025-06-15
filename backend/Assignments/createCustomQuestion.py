@@ -25,7 +25,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Body must be a non-empty list of questions'})
             }
 
-        # Verificar que el level_id exista
+        # Referencias a tablas
         custom_levels = dynamodb.Table(os.environ['TABLE_CUSTOM_LEVELS'])
         questions_table = dynamodb.Table(os.environ['TABLE_CUSTOM_QUESTIONS'])
         created = []
@@ -43,14 +43,13 @@ def lambda_handler(event, context):
                     'body': json.dumps({'error': 'Each question needs text, options, correctIndex, topic, and level_id'})
                 }
 
-            # validar opciones
             if not isinstance(options, list) or len(options) < 2:
                 return {
                     'statusCode': 400,
                     'body': json.dumps({'error': 'Options must be a list of at least 2 items'})
                 }
 
-            # validar level_id
+            # Validar nivel
             lvl = custom_levels.get_item(Key={'level_id': level_id})
             if 'Item' not in lvl:
                 return {
@@ -58,6 +57,7 @@ def lambda_handler(event, context):
                     'body': json.dumps({'error': f'Custom level {level_id} not found'})
                 }
 
+            # Crear pregunta
             qid = str(uuid.uuid4())
             questions_table.put_item(Item={
                 'question_id': qid,
@@ -68,6 +68,16 @@ def lambda_handler(event, context):
                 'level_id': level_id
             })
             created.append({'question_id': qid, 'text': text})
+
+            # Añadir question_id al nivel correspondiente
+            custom_levels.update_item(
+                Key={'level_id': level_id},
+                UpdateExpression="SET questions_ids = list_append(if_not_exists(questions_ids, :empty_list), :new_qid)",
+                ExpressionAttributeValues={
+                    ':new_qid': [qid],
+                    ':empty_list': []
+                }
+            )
 
         return {
             'statusCode': 201,
