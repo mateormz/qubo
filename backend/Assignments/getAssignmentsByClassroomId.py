@@ -1,6 +1,7 @@
 import json
 import os
 import boto3
+from boto3.dynamodb.conditions import Key
 from common import validate_token
 
 dynamodb = boto3.resource('dynamodb')
@@ -11,15 +12,14 @@ def lambda_handler(event, context):
         if 'statusCode' in user_info:
             return user_info
 
-        # Verificar que el usuario sea profesor
         if user_info.get('role') != 'teacher':
             return {
                 'statusCode': 403,
                 'body': json.dumps({'error': 'Only teachers can view assignments'})
             }
 
-        body = json.loads(event.get('body', '{}'))
-        classroom_id = body.get('classroom_id')
+        # classroom_id desde query parameters
+        classroom_id = event.get('queryStringParameters', {}).get('classroom_id')
 
         if not classroom_id:
             return {
@@ -27,10 +27,10 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'classroom_id is required'})
             }
 
-        # Obtener todas las asignaciones asociadas a un aula (classroom_id)
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
         response = assignments_table.query(
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('classroom_id').eq(classroom_id)
+            IndexName='classroom_id-index',
+            KeyConditionExpression=Key('classroom_id').eq(classroom_id)
         )
 
         return {
