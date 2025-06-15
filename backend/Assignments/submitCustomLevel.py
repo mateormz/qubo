@@ -9,7 +9,7 @@ from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 
-def submit_custom_level(event, context):
+def lambda_handler(event, context):
     try:
         user_info = validate_token(event)
         if 'statusCode' in user_info:

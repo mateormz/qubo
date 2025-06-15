@@ -6,7 +6,7 @@ import boto3
 
 dynamodb = boto3.resource('dynamodb')
 
-def get_questions_by_custom_level_id(event, context):
+def lambda_handler(event, context):
     try:
         level_id = event['pathParameters'].get('level_id')
         if not level_id:

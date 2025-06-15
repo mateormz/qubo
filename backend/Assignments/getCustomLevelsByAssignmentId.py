@@ -4,7 +4,7 @@ import boto3
 
 dynamodb = boto3.resource('dynamodb')
 
-def get_custom_levels_by_assignment_id(event, context):
+def lambda_handler(event, context):
     try:
         assignment_id = event['pathParameters'].get('assignment_id')
 

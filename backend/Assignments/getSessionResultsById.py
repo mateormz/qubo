@@ -4,7 +4,7 @@ import boto3
 
 dynamodb = boto3.resource('dynamodb')
 
-def get_session_results_by_id(event, context):
+def lambda_handler(event, context):
     try:
         session_id = event['pathParameters'].get('session_id')
 

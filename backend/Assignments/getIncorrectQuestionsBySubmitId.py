@@ -8,7 +8,7 @@ from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 
-def get_incorrect_questions_by_submit_id(event, context):
+def lambda_handler(event, context):
     try:
         user_info = validate_token(event)
         if 'statusCode' in user_info:
