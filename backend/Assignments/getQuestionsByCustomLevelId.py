@@ -1,11 +1,12 @@
 import json
 import os
 import boto3
-from common import validate_token
+from common import validate_token, convert_decimal
 from boto3.dynamodb.types import TypeDeserializer
 
 dynamodb = boto3.resource('dynamodb')
 deserializer = TypeDeserializer()
+
 
 def lambda_handler(event, context):
     try:
@@ -38,9 +39,12 @@ def lambda_handler(event, context):
         )
 
         raw_questions = resp['Responses'].get(os.environ['TABLE_CUSTOM_QUESTIONS'], [])
-        questions = [ {k: deserializer.deserialize(v) for k, v in item.items()} for item in raw_questions ]
+        questions = [{k: deserializer.deserialize(v) for k, v in item.items()} for item in raw_questions]
 
-        return {'statusCode': 200, 'body': json.dumps({'questions': questions})}
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'questions': convert_decimal(questions)})
+        }
 
     except Exception as e:
         return {'statusCode': 500, 'body': json.dumps({'error': 'Internal server error', 'details': str(e)})}

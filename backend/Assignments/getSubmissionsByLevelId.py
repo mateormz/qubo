@@ -31,9 +31,9 @@ def lambda_handler(event, context):
 
         submissions = level_response['Item'].get('submissions', [])
         return {
-        'statusCode': 200,
-        'body': json.dumps({'questions': convert_decimal(questions)})
-    }
+            'statusCode': 200,
+            'body': json.dumps({'submissions': convert_decimal(submissions)})
+        }
 
     except Exception as e:
         return {
