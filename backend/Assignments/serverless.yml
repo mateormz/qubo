@@ -1,0 +1,205 @@
+org: ${env:SLS_ORG}
+service: qubo-teacher-api
+
+provider:
+  name: aws
+  runtime: python3.9
+  iam:
+    role: ${env:AWS_ROLE_ARN}
+  memorySize: 1024
+  timeout: 29
+  environment:
+    SERVICE_NAME: qubo-teacher-api
+    STAGE: ${sls:stage}
+
+    # DynamoDB Tables
+    TABLE_CLASSROOMS: ${sls:stage}-qubo-classroom-table
+    TABLE_ASSIGNMENTS: ${sls:stage}-qubo-assignments-table
+    TABLE_CUSTOM_LEVELS: ${sls:stage}-qubo-custom-levels-table
+    TABLE_CUSTOM_QUESTIONS: ${sls:stage}-qubo-custom-questions-table
+    TABLE_SESSIONS: ${sls:stage}-qubo-sessions-table
+    TABLE_USERS: ${sls:stage}-qubo-auth-user-table
+
+    # Token validation
+    USER_SERVICE_NAME: qubo-auth-api
+    VALIDATE_TOKEN_FUNCTION: validateToken
+
+functions:
+  # Assignments
+  createAssignmentByTeacher:
+    handler: createAssignmentByTeacher.lambda_handler
+    events:
+      - http:
+          path: assignments
+          method: post
+          cors: true
+
+  getAssignmentsByClassroomId:
+    handler: getAssignmentsByClassroomId.lambda_handler
+    events:
+      - http:
+          path: assignments
+          method: get
+          cors: true
+
+  # Custom Levels
+  createCustomLevel:
+    handler: createCustomLevel.lambda_handler
+    events:
+      - http:
+          path: custom-levels
+          method: post
+          cors: true
+
+  getCustomLevelById:
+    handler: getCustomLevelById.lambda_handler
+    events:
+      - http:
+          path: custom-levels/{level_id}
+          method: get
+          cors: true
+
+  getCustomLevelsByAssignmentId:
+    handler: getCustomLevelsByAssignmentId.lambda_handler
+    events:
+      - http:
+          path: custom-levels/assignment/{assignment_id}
+          method: get
+          cors: true
+
+  # Custom Questions
+  createCustomQuestion:
+    handler: createCustomQuestion.lambda_handler
+    events:
+      - http:
+          path: custom-questions
+          method: post
+          cors: true
+
+  getCustomQuestionById:
+    handler: getCustomQuestionById.lambda_handler
+    events:
+      - http:
+          path: questions/{question_id}
+          method: get
+          cors: true
+
+  # Submissions
+  submitCustomLevel:
+    handler: submitCustomLevel.lambda_handler
+    events:
+      - http:
+          path: custom-levels/{level_id}/submit
+          method: post
+          cors: true
+
+  getSubmissionsByLevelId:
+    handler: getSubmissionsByLevelId.lambda_handler
+    events:
+      - http:
+          path: custom-levels/{level_id}/submissions
+          method: get
+          cors: true
+
+  # Sessions and Results
+  getSessionResultsById:
+    handler: getSessionResultsById.lambda_handler
+    events:
+      - http:
+          path: sessions/{session_id}
+          method: get
+          cors: true
+
+  getIncorrectQuestionsBySubmitId:
+    handler: getIncorrectQuestionsBySubmitId.lambda_handler
+    events:
+      - http:
+          path: sessions/{session_id}/incorrect-questions
+          method: get
+          cors: true
+
+  # Questions within Levels
+  getQuestionsByCustomLevelId:
+    handler: getQuestionsByCustomLevelId.lambda_handler
+    events:
+      - http:
+          path: custom-levels/{level_id}/questions
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    AssignmentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_ASSIGNMENTS}
+        AttributeDefinitions:
+          - AttributeName: assignment_id
+            AttributeType: S
+          - AttributeName: classroom_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: assignment_id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: classroom_id-index
+            KeySchema:
+              - AttributeName: classroom_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    CustomLevelsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_CUSTOM_LEVELS}
+        AttributeDefinitions:
+          - AttributeName: level_id
+            AttributeType: S
+          - AttributeName: assignment_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: level_id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: assignment_id-index
+            KeySchema:
+              - AttributeName: assignment_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    CustomQuestionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_CUSTOM_QUESTIONS}
+        AttributeDefinitions:
+          - AttributeName: question_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: question_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    SessionsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.TABLE_SESSIONS}
+        AttributeDefinitions:
+          - AttributeName: session_id
+            AttributeType: S
+          - AttributeName: user_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: session_id
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: user_id-index
+            KeySchema:
+              - AttributeName: user_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
