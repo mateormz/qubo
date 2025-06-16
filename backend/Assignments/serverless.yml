@@ -76,8 +76,8 @@ functions:
           method: post
           cors: true
 
-  getQuestionById:
-    handler: getQuestionById.lambda_handler
+  getCustomQuestionById:
+    handler: getCustomQuestionById.lambda_handler
     events:
       - http:
           path: questions/{question_id}
