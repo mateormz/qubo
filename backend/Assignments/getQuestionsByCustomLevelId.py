@@ -1,13 +1,16 @@
-# getQuestionsByCustomLevelId.py
-
 import json
 import os
 import boto3
+from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
     try:
+        user_info = validate_token(event)
+        if 'statusCode' in user_info:
+            return user_info
+
         level_id = event['pathParameters'].get('level_id')
         if not level_id:
             return {'statusCode': 400, 'body': json.dumps({'error': 'level_id is required'})}
@@ -27,9 +30,9 @@ def lambda_handler(event, context):
         resp = qt.batch_get_item(
             RequestItems={os.environ['TABLE_CUSTOM_QUESTIONS']: {'Keys': [{'question_id': q} for q in qids]}}
         )
-        questions = resp['Responses'][os.environ['TABLE_CUSTOM_QUESTIONS']]
+        questions = resp['Responses'].get(os.environ['TABLE_CUSTOM_QUESTIONS'], [])
 
-        return {'statusCode': 200, 'body': json.dumps({'questions': questions})}
+        return {'statusCode': 200, 'body': json.dumps({'questions': convert_decimal(questions)})}
 
     except Exception as e:
         return {'statusCode': 500, 'body': json.dumps({'error': 'Internal server error', 'details': str(e)})}

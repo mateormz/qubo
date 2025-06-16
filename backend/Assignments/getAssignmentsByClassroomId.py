@@ -8,17 +8,12 @@ dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
     try:
+        # Validación de token (sin restricción de rol)
         user_info = validate_token(event)
         if 'statusCode' in user_info:
             return user_info
 
-        if user_info.get('role') != 'teacher':
-            return {
-                'statusCode': 403,
-                'body': json.dumps({'error': 'Only teachers can view assignments'})
-            }
-
-        # classroom_id desde query parameters
+        # Obtener classroom_id desde query parameters
         classroom_id = event.get('queryStringParameters', {}).get('classroom_id')
 
         if not classroom_id:
@@ -27,6 +22,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'classroom_id is required'})
             }
 
+        # Consultar por el índice global
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
         response = assignments_table.query(
             IndexName='classroom_id-index',

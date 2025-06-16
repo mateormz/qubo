@@ -1,18 +1,23 @@
 import json
 import os
 import boto3
+from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
     try:
+        user_info = validate_token(event)
+        if 'statusCode' in user_info:
+            return user_info
+
         level_id = event['pathParameters'].get('level_id')
 
         if not level_id:
             return {
                 'statusCode': 400,
                 'body': json.dumps({'error': 'level_id is required'})
-            }z|
+            }
 
         # Recuperar el nivel personalizado por ID
         custom_levels_table = dynamodb.Table(os.environ['TABLE_CUSTOM_LEVELS'])
@@ -27,7 +32,7 @@ def lambda_handler(event, context):
         submissions = level_response['Item'].get('submissions', [])
         return {
             'statusCode': 200,
-            'body': json.dumps({'submissions': submissions})
+            'body': json.dumps(convert_decimal({'submissions': submissions}))
         }
 
     except Exception as e:

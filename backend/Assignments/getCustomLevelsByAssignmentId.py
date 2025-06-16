@@ -1,12 +1,17 @@
 import json
 import os
 import boto3
-from boto3.dynamodb.conditions import Key  # Asegúrate de importar esto
+from boto3.dynamodb.conditions import Key
+from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
     try:
+        user_info = validate_token(event)
+        if 'statusCode' in user_info:
+            return user_info
+
         assignment_id = event['pathParameters'].get('assignment_id')
 
         if not assignment_id:
@@ -24,7 +29,7 @@ def lambda_handler(event, context):
 
         return {
             'statusCode': 200,
-            'body': json.dumps({'custom_levels': response.get('Items', [])})
+            'body': json.dumps({'custom_levels': convert_decimal(response.get('Items', []))})
         }
 
     except Exception as e:
