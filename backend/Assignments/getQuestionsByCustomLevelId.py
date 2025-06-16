@@ -1,10 +1,11 @@
 import json
 import os
 import boto3
-from common import validate_token, convert_decimal
+from common import validate_token
+from boto3.dynamodb.types import TypeDeserializer
 
 dynamodb = boto3.resource('dynamodb')
-dynamo_client = boto3.client('dynamodb')  # Este sí tiene batch_get_item
+deserializer = TypeDeserializer()
 
 def lambda_handler(event, context):
     try:
@@ -26,29 +27,20 @@ def lambda_handler(event, context):
         if not qids:
             return {'statusCode': 404, 'body': json.dumps({'error': 'No questions for this level'})}
 
-        # Recuperar preguntas usando batch_get_item con el cliente
-        table_name = os.environ['TABLE_CUSTOM_QUESTIONS']
-        keys = [{'question_id': {'S': qid}} for qid in qids]
-
-        resp = dynamo_client.batch_get_item(
+        # Usar el cliente para batch_get_item
+        client = boto3.client('dynamodb')
+        resp = client.batch_get_item(
             RequestItems={
-                table_name: {
-                    'Keys': keys
+                os.environ['TABLE_CUSTOM_QUESTIONS']: {
+                    'Keys': [{'question_id': {'S': qid}} for qid in qids]
                 }
             }
         )
 
-        raw_questions = resp['Responses'].get(table_name, [])
-        # Convertir Decimals a float/int si es necesario
-        questions = convert_decimal(raw_questions)
+        raw_questions = resp['Responses'].get(os.environ['TABLE_CUSTOM_QUESTIONS'], [])
+        questions = [ {k: deserializer.deserialize(v) for k, v in item.items()} for item in raw_questions ]
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'questions': questions})
-        }
+        return {'statusCode': 200, 'body': json.dumps({'questions': questions})}
 
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
-        }
+        return {'statusCode': 500, 'body': json.dumps({'error': 'Internal server error', 'details': str(e)})}
