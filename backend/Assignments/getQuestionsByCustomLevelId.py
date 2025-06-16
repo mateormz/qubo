@@ -4,6 +4,7 @@ import boto3
 from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
+dynamo_client = boto3.client('dynamodb')  # Este sí tiene batch_get_item
 
 def lambda_handler(event, context):
     try:
@@ -25,14 +26,29 @@ def lambda_handler(event, context):
         if not qids:
             return {'statusCode': 404, 'body': json.dumps({'error': 'No questions for this level'})}
 
-        # Recuperar preguntas de custom-questions
-        qt = dynamodb.Table(os.environ['TABLE_CUSTOM_QUESTIONS'])
-        resp = qt.batch_get_item(
-            RequestItems={os.environ['TABLE_CUSTOM_QUESTIONS']: {'Keys': [{'question_id': q} for q in qids]}}
-        )
-        questions = resp['Responses'].get(os.environ['TABLE_CUSTOM_QUESTIONS'], [])
+        # Recuperar preguntas usando batch_get_item con el cliente
+        table_name = os.environ['TABLE_CUSTOM_QUESTIONS']
+        keys = [{'question_id': {'S': qid}} for qid in qids]
 
-        return {'statusCode': 200, 'body': json.dumps({'questions': convert_decimal(questions)})}
+        resp = dynamo_client.batch_get_item(
+            RequestItems={
+                table_name: {
+                    'Keys': keys
+                }
+            }
+        )
+
+        raw_questions = resp['Responses'].get(table_name, [])
+        # Convertir Decimals a float/int si es necesario
+        questions = convert_decimal(raw_questions)
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps({'questions': questions})
+        }
 
     except Exception as e:
-        return {'statusCode': 500, 'body': json.dumps({'error': 'Internal server error', 'details': str(e)})}
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
+        }
