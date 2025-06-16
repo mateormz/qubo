@@ -63,7 +63,12 @@ def lambda_handler(event, context):
         levels.update_item(
             Key={'level_id': level_id},
             UpdateExpression="SET submissions = list_append(submissions, :s)",
-            ExpressionAttributeValues={':s': [{'user_id': user_id, 'score': correct, 'passed': passed}]}
+            ExpressionAttributeValues={':s': [{
+                'user_id': user_id,
+                'score': correct,
+                'passed': passed,
+                'submission_id': session_id
+            }]}
         )
 
         return {
