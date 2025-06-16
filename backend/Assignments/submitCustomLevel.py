@@ -43,7 +43,15 @@ def lambda_handler(event, context):
                 continue
             is_corr = sel == item['correctIndex']
             if is_corr: correct += 1
-            results.append({'question_id': qid, 'was_correct': is_corr, 'topic': item.get('topic','N/A')})
+            results.append({
+            'question_id': qid,
+            'was_correct': is_corr,
+            'topic': item.get('topic', 'N/A'),
+            'text': item.get('text'),
+            'options': item.get('options'),
+            'selected_index': sel
+            })
+
 
         passed = correct >= 6
         session_id = str(uuid.uuid4())
