@@ -34,7 +34,7 @@ def lambda_handler(event, context):
         correct = 0
         results = []
         for resp in responses:
-            qid = resp.get('questionId')
+            qid = resp.get('question_id')
             sel = resp.get('selectedIndex')
             if qid not in qids:
                 continue
