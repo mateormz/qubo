@@ -63,7 +63,7 @@ def lambda_handler(event, context):
                 'level_id': session_data['level_id'],
                 'text': qdata['text'],
                 'options': qdata['options'],
-                'selectedIndex': result.get('selectedIndex', -1)
+                'selectedIndex': result.get('selected_index', -1)
             })
 
         return {'statusCode': 200, 'body': json.dumps({'incorrectQuestions': enriched})}
