@@ -7,11 +7,19 @@ provider:
   memorySize: 1024
   timeout: 29  # ← evita el warning por el límite de API Gateway
   iam:
-    role: ${env:AWS_ROLE_ARN}  # ← usa un rol predefinido con permisos adecuad
+    role: ${env:AWS_ROLE_ARN}  # ← usa un rol predefinido con permisos adecuados
   environment:
     USER_SERVICE_NAME: qubo-auth-api
     STAGE: ${sls:stage}
     VALIDATE_TOKEN_FUNCTION: validateToken
+
+plugins:
+  - serverless-python-requirements
+
+package:
+  include:
+    - requirements.txt
+
 
 functions:
   generateExercises:
