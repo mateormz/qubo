@@ -11,7 +11,6 @@ provider:
   environment:
     USER_SERVICE_NAME: qubo-auth-api
     STAGE: ${sls:stage}
-    GITHUB_TOKEN: ${env:GITHUB_TOKEN}
     VALIDATE_TOKEN_FUNCTION: validateToken
 
 functions:
