@@ -3,12 +3,16 @@ import json
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import SystemMessage, UserMessage
 from azure.core.credentials import AzureKeyCredential
+from token_manager import TokenManager
+
 
 class GPTService:
     def __init__(self):
         endpoint = "https://models.github.ai/inference"
         model = "openai/gpt-4.1"
-        token = os.environ["GITHUB_TOKEN"]
+
+        token_manager = TokenManager()         # ← Instancia el manejador
+        token = token_manager.get_token()      # ← Obtiene el token disponible
 
         self.client = ChatCompletionsClient(
             endpoint=endpoint,
