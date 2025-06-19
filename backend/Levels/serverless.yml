@@ -105,7 +105,7 @@ functions:
     handler: getUserSessions.lambda_handler
     events:
       - http:
-          path: games/sessions/me
+          path: games/sessions/{user_id}
           method: get
           cors: true
 

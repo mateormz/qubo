@@ -137,6 +137,14 @@ functions:
           path: topics/errors/{classroom_id}
           method: get
           cors: true
+          
+  getAssignmentsByUserId:
+  handler: getAssignmentsByUserId.lambda_handler
+  events:
+    - http:
+        path: assignments/sessions/{user_id}
+        method: get
+        cors: true
 
 resources:
   Resources:
