@@ -48,7 +48,7 @@ def lambda_handler(event, context):
                 'topic': item.get('topic', 'N/A'),
                 'text': item.get('text'),
                 'options': item.get('options'),
-                'selectedIndex': sel  # Cambié a selectedIndex
+                'selected_index': sel
             })
 
         # Llamada interna al Lambda para obtener el classroom_id
@@ -58,8 +58,16 @@ def lambda_handler(event, context):
             Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
         )
 
+        # Leer la respuesta del Lambda
         user_data = json.loads(response['Payload'].read().decode())  # Procesamos la respuesta
-        classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
+
+        # Comprobar si el classroom_id está presente
+        classroom_id = user_data.get('classroom_id', None)
+        if not classroom_id:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'classroom_id is missing from user data'})
+            }
 
         passed = correct >= 6
         session_id = str(uuid.uuid4())
