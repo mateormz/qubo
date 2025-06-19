@@ -121,7 +121,7 @@ functions:
           cors: true
   functions:
   getSessionsByUserId.py:
-    handler: getSessionsByUserId.py.lambda_handler
+    handler: getSessionsByUserId.lambda_handler
     events:
       - http:
           path: sessions/{user_id}
