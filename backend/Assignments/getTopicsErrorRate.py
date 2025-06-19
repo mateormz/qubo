@@ -13,8 +13,8 @@ def lambda_handler(event, context):
         if 'statusCode' in user_info:
             return user_info
         
-        user_id = user_info['user_id']
-        classroom_id = user_info.get('classroom_id')  # Asumiendo que el classroom_id está en la información del usuario
+        # Obtener el classroom_id directamente desde la URL
+        classroom_id = event['pathParameters'].get('classroom_id')
 
         # Validar que exista el classroom_id
         if not classroom_id:
@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         # Consultar por las sesiones del usuario filtradas por classroom_id
         response = session_table.query(
             IndexName='user_id-index',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_id)
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_info['user_id'])
         )
         
         sessions = convert_decimal(response.get('Items', []))

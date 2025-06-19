@@ -133,7 +133,7 @@ functions:
     handler: getTopicsErrorRate.lambda_handler
     events:
       - http:
-          path: topics/errors
+          path: topics/errors/{classroom_id}
           method: get
           cors: true
 
