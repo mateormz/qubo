@@ -9,7 +9,10 @@ provider:
   memorySize: 1024
   timeout: 29
   environment:
-    USER_API_LAMBDA: arn:aws:lambda:us-east-1:525422067597:function:qubo-auth-api-dev-getUserById
+    USER_SERVICE_NAME: qubo-auth-api
+    STAGE: ${sls:stage}
+    GET_USER_FUNCTION: getUserById
+
     SERVICE_NAME: qubo-teacher-api
     STAGE: ${sls:stage}
 

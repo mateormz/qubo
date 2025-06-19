@@ -10,7 +10,8 @@ lambda_client = boto3.client('lambda')  # Crear el cliente de Lambda
 
 def lambda_handler(event, context):
     try:
-        user_info = validate_token(event)
+        # Validar token
+        user_info = validate_token(event, lambda_client)
         if 'statusCode' in user_info:
             return user_info
 
@@ -52,22 +53,28 @@ def lambda_handler(event, context):
             })
 
         # Llamada interna al Lambda para obtener el classroom_id
-        print(f"Calling Lambda function to get classroom_id for user_id: {user_id}")
-        response = lambda_client.invoke(
-            FunctionName="qubo-auth-api-dev-getUserById",  # Usamos el nombre correcto de la función
-            InvocationType='RequestResponse',  # Síncrona
-            Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
-        )
+        try:
+            classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"
+            response = lambda_client.invoke(
+                FunctionName=classroom_function_name,  # Usamos el nombre correcto de la función Lambda
+                InvocationType='RequestResponse',  # Síncrona
+                Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
+            )
+            user_data = json.loads(response['Payload'].read().decode())
+            classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
 
-        # Procesar la respuesta
-        user_data = json.loads(response['Payload'].read().decode())
-        classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
+            # Log para verificar si classroom_id se obtuvo correctamente
+            if classroom_id:
+                print(f"Successfully retrieved classroom_id: {classroom_id}")
+            else:
+                print("No classroom_id found for the given user_id")
 
-        # Agregar log para verificar si classroom_id se obtuvo correctamente
-        if classroom_id:
-            print(f"Successfully retrieved classroom_id: {classroom_id}")
-        else:
-            print("No classroom_id found for the given user_id")
+        except Exception as e:
+            print(f"Error calling Lambda for classroom_id: {str(e)}")
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'error': 'Internal error while fetching classroom_id'})
+            }
 
         # Si no se obtiene classroom_id, devolver un error
         if not classroom_id:
@@ -103,6 +110,7 @@ def lambda_handler(event, context):
                 'submission_id': session_id,
                 'classroom_id': classroom_id  # Añadir classroom_id a las submissions
             }]}
+
         )
 
         return {
