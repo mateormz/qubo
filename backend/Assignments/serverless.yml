@@ -25,7 +25,7 @@ provider:
     VALIDATE_TOKEN_FUNCTION: validateToken
 
 functions:
-  # Assignments
+  # Existing functions
   createAssignmentByTeacher:
     handler: createAssignmentByTeacher.lambda_handler
     events:
@@ -124,6 +124,15 @@ functions:
     events:
       - http:
           path: custom-levels/{level_id}/questions
+          method: get
+          cors: true
+
+  # New function for topics error rate
+  getTopicsErrorRate:
+    handler: getTopicsErrorRate.lambda_handler
+    events:
+      - http:
+          path: topics/errors
           method: get
           cors: true
 
