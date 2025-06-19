@@ -3,7 +3,7 @@ import os
 import boto3
 from collections import defaultdict
 from common import validate_token, convert_decimal
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -24,11 +24,10 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'classroom_id is required'})
             }
 
-        # Consultar sesiones por classroom_id usando el nuevo índice
+        # Usar scan para obtener sesiones que coincidan con classroom_id
         session_table = dynamodb.Table(os.environ['TABLE_SESSIONS'])
-        response = session_table.query(
-            IndexName='classroom_id-index',
-            KeyConditionExpression=Key('classroom_id').eq(classroom_id)
+        response = session_table.scan(
+            FilterExpression=Attr('classroom_id').eq(classroom_id)
         )
 
         sessions = convert_decimal(response.get('Items', []))
