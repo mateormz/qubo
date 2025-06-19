@@ -119,12 +119,12 @@ functions:
           path: sessions/{session_id}/incorrect-questions
           method: get
           cors: true
-  functions:
+
   getSessionsByUserId:
     handler: getSessionsByUserId.lambda_handler
     events:
       - http:
-          path: sessions/{user_id}
+          path: sessions/byuser/{user_id}
           method: get
           cors: true
 
