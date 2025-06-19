@@ -120,11 +120,11 @@ functions:
           method: get
           cors: true
   functions:
-  getAssignmentsByUserId:
-    handler: getAssignmentsByUserId.lambda_handler
+  getSessionsByUserId.py:
+    handler: getSessionsByUserId.py.lambda_handler
     events:
       - http:
-          path: assignments/sessions/{user_id}
+          path: sessions/{user_id}
           method: get
           cors: true
 
