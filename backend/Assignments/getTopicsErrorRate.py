@@ -3,6 +3,7 @@ import os
 import boto3
 from collections import defaultdict
 from common import validate_token, convert_decimal
+from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -23,28 +24,25 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'classroom_id is required'})
             }
 
-        # Obtener todas las sesiones del usuario
+        # Consultar sesiones por classroom_id usando el nuevo índice
         session_table = dynamodb.Table(os.environ['TABLE_SESSIONS'])
-        
-        # Consultar por las sesiones del usuario filtradas por classroom_id
         response = session_table.query(
-            IndexName='user_id-index',
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_info['user_id'])
+            IndexName='classroom_id-index',
+            KeyConditionExpression=Key('classroom_id').eq(classroom_id)
         )
-        
+
         sessions = convert_decimal(response.get('Items', []))
 
         # Contadores para los temas
         topic_errors = defaultdict(int)
         topic_total = defaultdict(int)
 
-        # Filtrar y procesar resultados de sesiones solo para el classroom_id correspondiente
+        # Procesar resultados de sesiones
         for session in sessions:
-            if session.get('classroom_id') == classroom_id:  # Filtrar solo las sesiones del aula
-                for result in session.get('results', []):
-                    if not result['was_correct']:  # Si la respuesta es incorrecta
-                        topic_errors[result['topic']] += 1  # Incrementar errores
-                    topic_total[result['topic']] += 1  # Contabilizar preguntas
+            for result in session.get('results', []):
+                if not result['was_correct']:  # Si la respuesta es incorrecta
+                    topic_errors[result['topic']] += 1  # Incrementar errores
+                topic_total[result['topic']] += 1  # Contabilizar preguntas
 
         # Calcular el porcentaje de error por tema
         topic_error_rate = []

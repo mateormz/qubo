@@ -203,6 +203,8 @@ resources:
             AttributeType: S
           - AttributeName: user_id
             AttributeType: S
+          - AttributeName: classroom_id
+            AttributeType: S
         KeySchema:
           - AttributeName: session_id
             KeyType: HASH
@@ -213,4 +215,11 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+          - IndexName: classroom_id-index
+            KeySchema:
+              - AttributeName: classroom_id
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
+
