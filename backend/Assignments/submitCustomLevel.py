@@ -10,23 +10,16 @@ lambda_client = boto3.client('lambda')  # Crear el cliente de Lambda
 
 def lambda_handler(event, context):
     try:
-        # Obtener el token desde el header Authorization
-        token = event.get('headers', {}).get('Authorization')
-        if not token:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'Authorization token is missing'})
-            }
-
         # Validar token
         user_info = validate_token(event, lambda_client)
         if 'statusCode' in user_info:
             return user_info
 
-        user_id = event['pathParameters']['user_id']  # Obtener el user_id de la URL
+        user_id = user_info['user_id']
         level_id = event['pathParameters'].get('level_id')
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
+        
         if not isinstance(responses, list) or not responses:
             return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid or missing responses'})}
 
@@ -60,13 +53,22 @@ def lambda_handler(event, context):
                 'selected_index': sel
             })
 
-        # Llamada interna al Lambda para obtener el classroom_id
+        # Llamada interna al Lambda para obtener el classroom_id, pasando también el token
         try:
-            classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"
+            classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"  # Correcto formato
+            token = event.get('headers', {}).get('Authorization')  # Obtener el token desde los headers
+
+            # Verificar si se obtuvo el token
+            if not token:
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'error': 'Authorization token is missing'})
+                }
+
             response = lambda_client.invoke(
                 FunctionName=classroom_function_name,  # Usamos el nombre correcto de la función Lambda
                 InvocationType='RequestResponse',  # Síncrona
-                Payload=json.dumps({'user_id': user_id, 'token': token})  # Pasamos el user_id de la URL y el token del header
+                Payload=json.dumps({'user_id': user_id, 'token': token})  # Pasamos el user_id y el token
             )
             user_data = json.loads(response['Payload'].read().decode())
             classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
