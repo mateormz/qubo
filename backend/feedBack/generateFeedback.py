@@ -17,6 +17,7 @@ def lambda_handler(event, context):
         user_id = user_info['user_id']
         body = json.loads(event.get('body', '{}'))
         session_id = body.get('session_id')
+        session_type = body.get('type', 'Levels')  # Nuevo parámetro con default
 
         if not session_id:
             return {
@@ -24,8 +25,15 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Missing session_id'})
             }
 
-        # Obtener sesión
-        session_table = dynamodb.Table(os.environ['TABLE_GAME_SESSIONS'])
+        # Elegir tabla de sesión según tipo
+        if session_type == 'Assignments':
+            session_table_name = os.environ['TABLE_ASSIGNMENT_SESSIONS']
+            get_question_function = f"{os.environ['TEACHER_SERVICE_NAME']}-{os.environ['STAGE']}-getCustomQuestionById"
+        else:
+            session_table_name = os.environ['TABLE_GAME_SESSIONS']
+            get_question_function = f"{os.environ['SERVICE_NAME']}-{os.environ['STAGE']}-getQuestion"
+
+        session_table = dynamodb.Table(session_table_name)
         session_data = session_table.get_item(Key={'session_id': session_id}).get('Item')
 
         if not session_data:
@@ -44,15 +52,14 @@ def lambda_handler(event, context):
 
         feedback_items = []
 
-        # Configurar nombres de funciones lambda
-        get_question_function = f"{os.environ['SERVICE_NAME']}-{os.environ['STAGE']}-getQuestion"
+        # Lambda para IA
         generate_guide_function = f"{os.environ['IA_SERVICE_NAME']}-{os.environ['STAGE']}-generateGuide"
 
         for q in incorrect_questions:
             question_id = q['question_id']
             topic = q.get('topic', 'N/A')
 
-            # Obtener la pregunta
+            # Obtener pregunta de Lambda correspondiente
             question_payload = {
                 "pathParameters": {"question_id": question_id},
                 "headers": event.get("headers", {})
@@ -66,7 +73,7 @@ def lambda_handler(event, context):
 
             question_body = json.loads(question_response['Payload'].read())
             if question_body.get('statusCode') != 200:
-                continue  # Si falla, pasa a la siguiente
+                continue
 
             question_data = json.loads(question_body['body'])
             question_text = question_data['text']
@@ -103,7 +110,7 @@ def lambda_handler(event, context):
                 "guide": guide
             })
 
-        # Guardar en TABLE_FEEDBACK
+        # Guardar en feedback
         feedback_table = dynamodb.Table(os.environ['TABLE_FEEDBACK'])
         feedback_table.put_item(Item={
             "session_id": session_id,

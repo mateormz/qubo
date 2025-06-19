@@ -10,13 +10,16 @@ provider:
   timeout: 29
   environment:
     STAGE: ${sls:stage}
-    SERVICE_NAME: qubo-games-api              # Servicio que contiene getQuestion
-    IA_SERVICE_NAME: qubo-ia-api             # Servicio que contiene generateGuide
-    VALIDATE_TOKEN_FUNCTION: validateToken   # Función que valida tokens
-    USER_SERVICE_NAME: qubo-auth-api         # Para construir el nombre de función validate
+    SERVICE_NAME: qubo-games-api
+    IA_SERVICE_NAME: qubo-ia-api
+    VALIDATE_TOKEN_FUNCTION: validateToken
+    USER_SERVICE_NAME: qubo-auth-api
+    TEACHER_SERVICE_NAME: qubo-teacher-api         # ← Nueva línea
     TABLE_FEEDBACK: ${sls:stage}-qubo-feedback
     TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions
+    TABLE_ASSIGNMENT_SESSIONS: ${sls:stage}-qubo-sessions-table
     TABLE_QUESTIONS: ${sls:stage}-qubo-questions-table
+
 
 functions:
   generateFeedback:
