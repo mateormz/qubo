@@ -19,7 +19,7 @@ def lambda_handler(event, context):
         level_id = event['pathParameters'].get('level_id')
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
-        
+
         if not isinstance(responses, list) or not responses:
             return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid or missing responses'})}
 
@@ -30,10 +30,10 @@ def lambda_handler(event, context):
             return {'statusCode': 404, 'body': json.dumps({'error': f'Custom level {level_id} not found'})}
 
         qids = lvl['Item'].get('questions_ids', [])
-        # Verificar respuestas contra custom-questions
         qt = dynamodb.Table(os.environ['TABLE_CUSTOM_QUESTIONS'])
         correct = 0
         results = []
+
         for resp in responses:
             qid = resp.get('question_id')
             sel = resp.get('selectedIndex')
@@ -43,7 +43,8 @@ def lambda_handler(event, context):
             if not item:
                 continue
             is_corr = sel == item['correctIndex']
-            if is_corr: correct += 1
+            if is_corr:
+                correct += 1
             results.append({
                 'question_id': qid,
                 'was_correct': is_corr,
@@ -53,40 +54,56 @@ def lambda_handler(event, context):
                 'selected_index': sel
             })
 
-        # Llamada interna al Lambda para obtener el classroom_id, pasando también el token
+        # 🔄 Llamada al Lambda getUserById (simulando request API Gateway)
         try:
-            classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"  # Correcto formato
-            token = event.get('headers', {}).get('Authorization')  # Obtener el token desde los headers
+            classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"
+            token = event.get('headers', {}).get('Authorization')
 
-            # Verificar si se obtuvo el token
             if not token:
                 return {
                     'statusCode': 400,
                     'body': json.dumps({'error': 'Authorization token is missing'})
                 }
 
-            response = lambda_client.invoke(
-                FunctionName=classroom_function_name,  # Usamos el nombre correcto de la función Lambda
-                InvocationType='RequestResponse',  # Síncrona
-                Payload=json.dumps({'user_id': user_id, 'token': token})  # Pasamos el user_id y el token
-            )
-            user_data = json.loads(response['Payload'].read().decode())
-            classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
+            # Simular event como lo enviaría API Gateway
+            simulated_event = {
+                "headers": {
+                    "Authorization": token
+                },
+                "pathParameters": {
+                    "user_id": user_id
+                }
+            }
 
-            # Log para verificar si classroom_id se obtuvo correctamente
+            response = lambda_client.invoke(
+                FunctionName=classroom_function_name,
+                InvocationType='RequestResponse',
+                Payload=json.dumps(simulated_event)
+            )
+
+            user_response = json.loads(response['Payload'].read().decode())
+
+            if 'statusCode' in user_response and user_response['statusCode'] != 200:
+                return {
+                    'statusCode': 500,
+                    'body': json.dumps({'error': 'Failed to retrieve user data', 'details': user_response})
+                }
+
+            user_body = json.loads(user_response.get('body', '{}'))
+            classroom_id = user_body.get('classroom_id')
+
             if classroom_id:
-                print(f"Successfully retrieved classroom_id: {classroom_id}")
+                print(f"✅ classroom_id recibido: {classroom_id}")
             else:
-                print("No classroom_id found for the given user_id")
+                print("⚠️ classroom_id no encontrado en respuesta")
 
         except Exception as e:
-            print(f"Error calling Lambda for classroom_id: {str(e)}")
+            print(f"❌ Error llamando a getUserById: {str(e)}")
             return {
                 'statusCode': 500,
                 'body': json.dumps({'error': 'Internal error while fetching classroom_id'})
             }
 
-        # Si no se obtiene classroom_id, devolver un error
         if not classroom_id:
             return {
                 'statusCode': 400,
@@ -96,12 +113,11 @@ def lambda_handler(event, context):
         passed = correct >= 6
         session_id = str(uuid.uuid4())
 
-        # Guardar sesión con classroom_id
         sess = dynamodb.Table(os.environ['TABLE_SESSIONS'])
         sess.put_item(Item={
             'session_id': session_id,
             'user_id': user_id,
-            'classroom_id': classroom_id,  # Guardamos el classroom_id
+            'classroom_id': classroom_id,
             'level_id': level_id,
             'score': correct,
             'passed': passed,
@@ -109,18 +125,16 @@ def lambda_handler(event, context):
             'timestamp': datetime.utcnow().isoformat()
         })
 
-        # Actualizar submissions en el nivel
         levels.update_item(
             Key={'level_id': level_id},
             UpdateExpression="SET submissions = list_append(submissions, :s)",
-            ExpressionAttributeValues={':s': [{
+            ExpressionAttributeValues={':s': [ {
                 'user_id': user_id,
                 'score': correct,
                 'passed': passed,
                 'submission_id': session_id,
-                'classroom_id': classroom_id  # Añadir classroom_id a las submissions
-            }]}
-
+                'classroom_id': classroom_id
+            } ]}
         )
 
         return {
@@ -134,5 +148,5 @@ def lambda_handler(event, context):
         }
 
     except Exception as e:
-        print(f"Error occurred: {str(e)}")  # Agregar log de error
+        print(f"❌ Error general en submit: {str(e)}")
         return {'statusCode': 500, 'body': json.dumps({'error': 'Internal server error', 'details': str(e)})}
