@@ -54,7 +54,7 @@ def lambda_handler(event, context):
         # Llamada interna al Lambda para obtener el classroom_id
         print(f"Calling Lambda function to get classroom_id for user_id: {user_id}")
         response = lambda_client.invoke(
-            FunctionName=os.environ['USER_API_LAMBDA'],  # Usamos la variable de entorno
+            FunctionName="qubo-auth-api-dev-getUserById",  # Usamos el nombre correcto de la función
             InvocationType='RequestResponse',  # Síncrona
             Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
         )
