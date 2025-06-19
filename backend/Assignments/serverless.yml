@@ -9,7 +9,6 @@ provider:
   memorySize: 1024
   timeout: 29
   environment:
-    USER_SERVICE_NAME: qubo-auth-api
     GET_USER_FUNCTION: getUserById
 
     SERVICE_NAME: qubo-teacher-api
