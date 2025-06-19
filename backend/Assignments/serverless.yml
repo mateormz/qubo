@@ -10,7 +10,6 @@ provider:
   timeout: 29
   environment:
     USER_SERVICE_NAME: qubo-auth-api
-    STAGE: ${sls:stage}
     GET_USER_FUNCTION: getUserById
 
     SERVICE_NAME: qubo-teacher-api
