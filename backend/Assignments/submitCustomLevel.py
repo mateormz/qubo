@@ -10,12 +10,20 @@ lambda_client = boto3.client('lambda')  # Crear el cliente de Lambda
 
 def lambda_handler(event, context):
     try:
+        # Obtener el token desde el header Authorization
+        token = event.get('headers', {}).get('Authorization')
+        if not token:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'Authorization token is missing'})
+            }
+
         # Validar token
         user_info = validate_token(event, lambda_client)
         if 'statusCode' in user_info:
             return user_info
 
-        user_id = user_info['user_id']
+        user_id = event['pathParameters']['user_id']  # Obtener el user_id de la URL
         level_id = event['pathParameters'].get('level_id')
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
@@ -58,7 +66,7 @@ def lambda_handler(event, context):
             response = lambda_client.invoke(
                 FunctionName=classroom_function_name,  # Usamos el nombre correcto de la función Lambda
                 InvocationType='RequestResponse',  # Síncrona
-                Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
+                Payload=json.dumps({'user_id': user_id, 'token': token})  # Pasamos el user_id de la URL y el token del header
             )
             user_data = json.loads(response['Payload'].read().decode())
             classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
