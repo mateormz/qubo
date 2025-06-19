@@ -34,7 +34,7 @@ def lambda_handler(event, context):
         results = []
 
         for response in responses:
-            question_id = response.get('questionId')
+            question_id = response.get('question_id')
             selected_index = response.get('selectedIndex')
 
             question_item = question_table.get_item(Key={'question_id': question_id}).get('Item')
