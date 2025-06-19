@@ -119,6 +119,14 @@ functions:
           path: sessions/{session_id}/incorrect-questions
           method: get
           cors: true
+  functions:
+  getAssignmentsByUserId:
+    handler: getAssignmentsByUserId.lambda_handler
+    events:
+      - http:
+          path: assignments/sessions/{user_id}
+          method: get
+          cors: true
 
   # Questions within Levels
   getQuestionsByCustomLevelId:
@@ -138,13 +146,6 @@ functions:
           method: get
           cors: true
           
-  getAssignmentsByUserId:
-  handler: getAssignmentsByUserId.lambda_handler
-  events:
-    - http:
-        path: assignments/sessions/{user_id}
-        method: get
-        cors: true
 
 resources:
   Resources:
