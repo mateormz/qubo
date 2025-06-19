@@ -22,7 +22,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'user_id is required in the URL'})
             }
 
-        # Validar que el user del token coincida con el del path (opcional pero recomendable)
+        # Validar que el user del token coincida con el del path
         if user_info['user_id'] != user_id_from_path:
             return {
                 'statusCode': 403,
@@ -36,9 +36,22 @@ def lambda_handler(event, context):
             KeyConditionExpression=Key('user_id').eq(user_id_from_path)
         )
 
+        raw_sessions = convert_decimal(response.get('Items', []))
+
+        # Simplificar los campos de "results"
+        for session in raw_sessions:
+            simplified_results = []
+            for r in session.get("results", []):
+                simplified_results.append({
+                    "question_id": r.get("question_id"),
+                    "topic": r.get("topic"),
+                    "was_correct": r.get("was_correct")
+                })
+            session["results"] = simplified_results
+
         return {
             'statusCode': 200,
-            'body': json.dumps({'sessions': convert_decimal(response.get('Items', []))})
+            'body': json.dumps({'sessions': raw_sessions})
         }
 
     except Exception as e:
