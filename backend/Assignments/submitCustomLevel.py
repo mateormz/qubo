@@ -1,5 +1,3 @@
-# submitCustomLevel.py
-
 import json
 import os
 import boto3
@@ -8,6 +6,7 @@ from datetime import datetime
 from common import validate_token, convert_decimal
 
 dynamodb = boto3.resource('dynamodb')
+lambda_client = boto3.client('lambda')  # Crear el cliente de Lambda
 
 def lambda_handler(event, context):
     try:
@@ -44,22 +43,33 @@ def lambda_handler(event, context):
             is_corr = sel == item['correctIndex']
             if is_corr: correct += 1
             results.append({
-            'question_id': qid,
-            'was_correct': is_corr,
-            'topic': item.get('topic', 'N/A'),
-            'text': item.get('text'),
-            'options': item.get('options'),
-            'selected_index': sel
+                'question_id': qid,
+                'was_correct': is_corr,
+                'topic': item.get('topic', 'N/A'),
+                'text': item.get('text'),
+                'options': item.get('options'),
+                'selectedIndex': sel  # Cambié a selectedIndex
             })
 
+        # Llamada interna al Lambda para obtener el classroom_id
+        response = lambda_client.invoke(
+            FunctionName=os.environ['USER_API_LAMBDA'],  # Usamos la variable de entorno
+            InvocationType='RequestResponse',  # Síncrona
+            Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
+        )
+
+        user_data = json.loads(response['Payload'].read().decode())  # Procesamos la respuesta
+        classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
 
         passed = correct >= 6
         session_id = str(uuid.uuid4())
-        # Guardar sesión
+
+        # Guardar sesión con classroom_id
         sess = dynamodb.Table(os.environ['TABLE_SESSIONS'])
         sess.put_item(Item={
             'session_id': session_id,
             'user_id': user_id,
+            'classroom_id': classroom_id,  # Guardamos el classroom_id
             'level_id': level_id,
             'score': correct,
             'passed': passed,
@@ -75,7 +85,8 @@ def lambda_handler(event, context):
                 'user_id': user_id,
                 'score': correct,
                 'passed': passed,
-                'submission_id': session_id
+                'submission_id': session_id,
+                'classroom_id': classroom_id  # Añadir classroom_id a las submissions
             }]}
         )
 

@@ -8,33 +8,43 @@ dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
     try:
-        # Validar token
+        # Validar token y obtener información del usuario
         user_info = validate_token(event)
         if 'statusCode' in user_info:
             return user_info
-
-        # Obtener todos los resultados de las sesiones del usuario
+        
         user_id = user_info['user_id']
+        classroom_id = user_info.get('classroom_id')  # Asumiendo que el classroom_id está en la información del usuario
+
+        # Validar que exista el classroom_id
+        if not classroom_id:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'classroom_id is required'})
+            }
+
+        # Obtener todas las sesiones del usuario
         session_table = dynamodb.Table(os.environ['TABLE_SESSIONS'])
         
-        # Consultar por las sesiones del usuario
+        # Consultar por las sesiones del usuario filtradas por classroom_id
         response = session_table.query(
             IndexName='user_id-index',
             KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_id)
         )
         
         sessions = convert_decimal(response.get('Items', []))
-        
+
         # Contadores para los temas
         topic_errors = defaultdict(int)
         topic_total = defaultdict(int)
 
-        # Procesar resultados de sesiones
+        # Filtrar y procesar resultados de sesiones solo para el classroom_id correspondiente
         for session in sessions:
-            for result in session.get('results', []):
-                if not result['was_correct']:  # Si la respuesta es incorrecta
-                    topic_errors[result['topic']] += 1  # Incrementar errores
-                topic_total[result['topic']] += 1  # Contabilizar preguntas
+            if session.get('classroom_id') == classroom_id:  # Filtrar solo las sesiones del aula
+                for result in session.get('results', []):
+                    if not result['was_correct']:  # Si la respuesta es incorrecta
+                        topic_errors[result['topic']] += 1  # Incrementar errores
+                    topic_total[result['topic']] += 1  # Contabilizar preguntas
 
         # Calcular el porcentaje de error por tema
         topic_error_rate = []
