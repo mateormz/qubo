@@ -52,17 +52,24 @@ def lambda_handler(event, context):
             })
 
         # Llamada interna al Lambda para obtener el classroom_id
+        print(f"Calling Lambda function to get classroom_id for user_id: {user_id}")
         response = lambda_client.invoke(
             FunctionName=os.environ['USER_API_LAMBDA'],  # Usamos la variable de entorno
             InvocationType='RequestResponse',  # Síncrona
             Payload=json.dumps({'user_id': user_id})  # Pasamos el user_id
         )
 
-        # Leer la respuesta del Lambda
-        user_data = json.loads(response['Payload'].read().decode())  # Procesamos la respuesta
+        # Procesar la respuesta
+        user_data = json.loads(response['Payload'].read().decode())
+        classroom_id = user_data.get('classroom_id')  # Extraemos el classroom_id
 
-        # Comprobar si el classroom_id está presente
-        classroom_id = user_data.get('classroom_id', None)
+        # Agregar log para verificar si classroom_id se obtuvo correctamente
+        if classroom_id:
+            print(f"Successfully retrieved classroom_id: {classroom_id}")
+        else:
+            print("No classroom_id found for the given user_id")
+
+        # Si no se obtiene classroom_id, devolver un error
         if not classroom_id:
             return {
                 'statusCode': 400,
@@ -109,4 +116,5 @@ def lambda_handler(event, context):
         }
 
     except Exception as e:
+        print(f"Error occurred: {str(e)}")  # Agregar log de error
         return {'statusCode': 500, 'body': json.dumps({'error': 'Internal server error', 'details': str(e)})}
