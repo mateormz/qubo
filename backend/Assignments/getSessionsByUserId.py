@@ -49,6 +49,9 @@ def lambda_handler(event, context):
                 })
             session["results"] = simplified_results
 
+            # Incluir level_time explícitamente si existe
+            session["level_time"] = session.get("level_time", "")  # opcional: "" si no existe
+
         return {
             'statusCode': 200,
             'body': json.dumps({'sessions': raw_sessions})
