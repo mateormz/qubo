@@ -28,8 +28,9 @@ def lambda_handler(event, context):
 
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
+        level_time = body.get('level_time', '')  # Nuevo campo: level_time
 
-        print(f"📝 Total respuestas recibidas: {len(responses)}")
+        print(f"📝 Total respuestas recibidas: {len(responses)} | ⏱️ Tiempo: {level_time}")
 
         if not isinstance(responses, list) or not responses:
             return {
@@ -86,6 +87,7 @@ def lambda_handler(event, context):
         print(f"📊 Resultado: {correct_count} correctas | {'🟢 Aprobado' if passed else '🔴 Reprobado'}")
         print("💾 Guardando sesión:", session_id)
 
+        # Guardar la sesión con el tiempo del nivel
         session_table.put_item(Item={
             'session_id': session_id,
             'user_id': user_id,
@@ -94,6 +96,7 @@ def lambda_handler(event, context):
             'score': correct_count,
             'passed': passed,
             'results': results,
+            'level_time': level_time,  # Guardamos el tiempo en la sesión
             'timestamp': datetime.utcnow().isoformat()
         })
 
@@ -122,7 +125,8 @@ def lambda_handler(event, context):
             'sessionId': session_id,
             'score': correct_count,
             'passed': passed,
-            'incorrectQuestions': [r for r in results if not r['was_correct']]
+            'incorrectQuestions': [r for r in results if not r['was_correct']],
+            'levelTime': level_time  # Incluir level_time en la respuesta final
         })
 
         print("📤 Respuesta final:", response_data)
