@@ -24,14 +24,11 @@ class TokenManager:
         with open(file_path, "r") as file:
             tokens = json.load(file)
 
-        today = datetime.now().date().isoformat()
-
         for token in tokens:
             if "count" not in token:
                 token["count"] = 0
-            if "date" not in token or token["date"] != today:
-                token["count"] = 0
-                token["date"] = today
+            if "date" not in token:
+                token["date"] = datetime.now().date().isoformat()
 
         self._save_tokens(tokens)
         return tokens
@@ -44,11 +41,24 @@ class TokenManager:
         self._upload_to_s3(temp_path)
 
     def get_token(self):
+        today = datetime.now().date().isoformat()
+
+        # Buscar token disponible
         for token in self.tokens:
             if token["count"] < self.max_requests:
                 token["count"] += 1
+                token["date"] = today  # registrar el uso en el día actual
                 self._save_tokens()
                 print(f"🔁 Usando token terminado en: {token['token'][-4:]}, usados: {token['count']}")
                 return token["token"]
+
+        # Si todos alcanzaron el límite, y es un nuevo día, reiniciar
+        if all(token.get("date") != today for token in self.tokens):
+            print("🔄 Nuevo día detectado. Reiniciando contadores.")
+            for token in self.tokens:
+                token["count"] = 0
+                token["date"] = today
+            self._save_tokens()
+            return self.get_token()
 
         raise Exception("🚫 Todos los tokens alcanzaron el límite diario.")
