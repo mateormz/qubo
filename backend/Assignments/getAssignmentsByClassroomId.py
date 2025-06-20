@@ -3,39 +3,32 @@ import os
 import boto3
 from boto3.dynamodb.conditions import Key
 from common import validate_token
+from cors_utils import cors_handler, respond
 
 dynamodb = boto3.resource('dynamodb')
 
+@cors_handler
 def lambda_handler(event, context):
     try:
-        # Validación de token (sin restricción de rol)
+        # Validar token (sin restricción de rol)
         user_info = validate_token(event)
         if 'statusCode' in user_info:
             return user_info
 
-        # Obtener classroom_id desde query parameters
+        # Obtener classroom_id desde los parámetros de query
         classroom_id = event.get('queryStringParameters', {}).get('classroom_id')
 
         if not classroom_id:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'classroom_id is required'})
-            }
+            return respond(400, {'error': 'classroom_id is required'})
 
-        # Consultar por el índice global
+        # Consultar la tabla de asignaciones por classroom_id
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
         response = assignments_table.query(
             IndexName='classroom_id-index',
             KeyConditionExpression=Key('classroom_id').eq(classroom_id)
         )
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'assignments': response.get('Items', [])})
-        }
+        return respond(200, {'assignments': response.get('Items', [])})
 
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
-        }
+        return respond(500, {'error': 'Internal server error', 'details': str(e)})
