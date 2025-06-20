@@ -19,6 +19,7 @@ def lambda_handler(event, context):
         level_id = event['pathParameters'].get('level_id')
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
+        level_time = body.get('level_time', '')  # ⬅️ Nuevo campo
 
         if not isinstance(responses, list) or not responses:
             return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid or missing responses'})}
@@ -122,19 +123,21 @@ def lambda_handler(event, context):
             'score': correct,
             'passed': passed,
             'results': results,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'level_time': level_time  # ⬅️ Guardado en sesión
         })
 
         levels.update_item(
             Key={'level_id': level_id},
             UpdateExpression="SET submissions = list_append(submissions, :s)",
-            ExpressionAttributeValues={':s': [ {
+            ExpressionAttributeValues={':s': [{
                 'user_id': user_id,
                 'score': correct,
                 'passed': passed,
                 'submission_id': session_id,
-                'classroom_id': classroom_id
-            } ]}
+                'classroom_id': classroom_id,
+                'level_time': level_time  # ⬅️ También guardado en el nivel
+            }]}
         )
 
         return {

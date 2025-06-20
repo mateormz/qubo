@@ -1,3 +1,5 @@
+getSessionByUserId
+
 import json
 import os
 import boto3
@@ -48,6 +50,9 @@ def lambda_handler(event, context):
                     "was_correct": r.get("was_correct")
                 })
             session["results"] = simplified_results
+
+            # Incluir level_time explícitamente si existe
+            session["level_time"] = session.get("level_time", "")  # opcional: "" si no existe
 
         return {
             'statusCode': 200,
