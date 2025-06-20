@@ -1,2 +1,3 @@
 backend/User/.serverless
 backend/Classroom/.serverless
+backend/Assignments/.serverless

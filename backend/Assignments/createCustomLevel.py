@@ -3,9 +3,11 @@ import os
 import uuid
 import boto3
 from common import validate_token
+from cors_utils import cors_handler, respond
 
 dynamodb = boto3.resource('dynamodb')
 
+@cors_handler
 def lambda_handler(event, context):
     try:
         user_info = validate_token(event)
@@ -13,10 +15,7 @@ def lambda_handler(event, context):
             return user_info
 
         if user_info.get('role') != 'teacher':
-            return {
-                'statusCode': 403,
-                'body': json.dumps({'error': 'Only teachers can create custom levels'})
-            }
+            return respond(403, {'error': 'Only teachers can create custom levels'})
 
         body = json.loads(event.get('body', '{}'))
         assignment_id = body.get('assignment_id')
@@ -26,19 +25,15 @@ def lambda_handler(event, context):
         questions_ids = body.get('questions_ids')
 
         if not assignment_id or not game_type or not name or not isinstance(questions_ids, list):
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'assignment_id, game_type, name, and questions_ids (as list) are required'})
-            }
+            return respond(400, {
+                'error': 'assignment_id, game_type, name, and questions_ids (as list) are required'
+            })
 
         assignments_table = dynamodb.Table(os.environ['TABLE_ASSIGNMENTS'])
         assignment_response = assignments_table.get_item(Key={'assignment_id': assignment_id})
 
         if 'Item' not in assignment_response:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': f'Assignment with ID {assignment_id} not found'})
-            }
+            return respond(404, {'error': f'Assignment with ID {assignment_id} not found'})
 
         custom_levels_table = dynamodb.Table(os.environ['TABLE_CUSTOM_LEVELS'])
         level_id = str(uuid.uuid4())
@@ -62,13 +57,10 @@ def lambda_handler(event, context):
             }
         )
 
-        return {
-            'statusCode': 201,
-            'body': json.dumps({'message': 'Custom level created successfully', 'level_id': level_id})
-        }
+        return respond(201, {
+            'message': 'Custom level created successfully',
+            'level_id': level_id
+        })
 
     except Exception as e:
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
-        }
+        return respond(500, {'error': 'Internal server error', 'details': str(e)})
