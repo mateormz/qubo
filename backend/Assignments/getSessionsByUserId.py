@@ -1,5 +1,3 @@
-getSessionByUserId
-
 import json
 import os
 import boto3
