@@ -10,7 +10,6 @@ provider:
   timeout: 29
   environment:
     GET_USER_FUNCTION: getUserById
-
     SERVICE_NAME: qubo-teacher-api
     STAGE: ${sls:stage}
 
@@ -137,6 +136,15 @@ functions:
           method: get
           cors: true
 
+  # New function for rankings
+  getRankings:
+    handler: getRankings.lambda_handler
+    events:
+      - http:
+          path: dashboard/rankings
+          method: get
+          cors: true
+
   # New function for topics error rate
   getTopicsErrorRate:
     handler: getTopicsErrorRate.lambda_handler
@@ -145,10 +153,10 @@ functions:
           path: topics/errors/{classroom_id}
           method: get
           cors: true
-          
 
 resources:
   Resources:
+    # DynamoDB Tables
     AssignmentsTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -223,4 +231,3 @@ resources:
             Projection:
               ProjectionType: ALL
         BillingMode: PAY_PER_REQUEST
-

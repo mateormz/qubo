@@ -19,6 +19,7 @@ def lambda_handler(event, context):
         level_id = event['pathParameters'].get('level_id')
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
+        duration = body.get('duration', 0)  # Recibimos el tiempo de duración desde Unity
 
         if not isinstance(responses, list) or not responses:
             return {'statusCode': 400, 'body': json.dumps({'error': 'Invalid or missing responses'})}
@@ -34,6 +35,7 @@ def lambda_handler(event, context):
         correct = 0
         results = []
 
+        # Procesar las respuestas
         for resp in responses:
             qid = resp.get('question_id')
             sel = resp.get('selectedIndex')
@@ -54,7 +56,11 @@ def lambda_handler(event, context):
                 'selected_index': sel
             })
 
-        # 🔄 Llamada al Lambda getUserById (simulando request API Gateway)
+        # Verificar si el estudiante aprobó el nivel
+        passed = correct >= 6
+        session_id = str(uuid.uuid4())
+
+        # Obtener classroom_id (simulando la llamada al Lambda getUserById)
         try:
             classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"
             token = event.get('headers', {}).get('Authorization')
@@ -65,7 +71,6 @@ def lambda_handler(event, context):
                     'body': json.dumps({'error': 'Authorization token is missing'})
                 }
 
-            # Simular event como lo enviaría API Gateway
             simulated_event = {
                 "headers": {
                     "Authorization": token
@@ -110,9 +115,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'classroom_id is missing from user data'})
             }
 
-        passed = correct >= 6
-        session_id = str(uuid.uuid4())
-
+        # Guardar la sesión con el tiempo de duración
         sess = dynamodb.Table(os.environ['TABLE_SESSIONS'])
         sess.put_item(Item={
             'session_id': session_id,
@@ -122,19 +125,21 @@ def lambda_handler(event, context):
             'score': correct,
             'passed': passed,
             'results': results,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'duration_seconds': duration  # Guardamos el tiempo de duración calculado desde Unity
         })
 
+        # Actualizar el nivel con el nuevo envío
         levels.update_item(
             Key={'level_id': level_id},
             UpdateExpression="SET submissions = list_append(submissions, :s)",
-            ExpressionAttributeValues={':s': [ {
+            ExpressionAttributeValues={':s': [{
                 'user_id': user_id,
                 'score': correct,
                 'passed': passed,
                 'submission_id': session_id,
                 'classroom_id': classroom_id
-            } ]}
+            }]}
         )
 
         return {
@@ -143,7 +148,8 @@ def lambda_handler(event, context):
                 'sessionId': session_id,
                 'score': correct,
                 'passed': passed,
-                'incorrectQuestions': [r for r in results if not r['was_correct']]
+                'incorrectQuestions': [r for r in results if not r['was_correct']],
+                'duration_seconds': duration  # Devolver el tiempo de duración en la respuesta
             }))
         }
 

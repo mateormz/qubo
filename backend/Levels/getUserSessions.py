@@ -30,6 +30,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Forbidden: token does not match user_id in URL'})
             }
 
+        # Consultar la tabla de sesiones para obtener las sesiones del usuario
         table = dynamodb.Table(os.environ['TABLE_GAME_SESSIONS'])
 
         response = table.query(
@@ -37,9 +38,25 @@ def lambda_handler(event, context):
             KeyConditionExpression=Key('user_id').eq(user_id)
         )
 
+        raw_sessions = convert_decimal(response.get('Items', []))
+
+        # Simplificar los campos de "results" y agregar la duración
+        for session in raw_sessions:
+            simplified_results = []
+            for r in session.get("results", []):
+                simplified_results.append({
+                    "question_id": r.get("question_id"),
+                    "topic": r.get("topic"),
+                    "was_correct": r.get("was_correct")
+                })
+            session["results"] = simplified_results
+
+            # Asegurarnos de incluir la duración de la sesión (en segundos)
+            session["duration_seconds"] = session.get("duration_seconds", 0)
+
         return {
             'statusCode': 200,
-            'body': json.dumps({'sessions': convert_decimal(response.get('Items', []))})
+            'body': json.dumps({'sessions': raw_sessions})
         }
 
     except Exception as e:

@@ -28,6 +28,7 @@ def lambda_handler(event, context):
 
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
+        duration = body.get('duration', 0)  # Recibimos el tiempo de duración desde Unity
 
         print(f"📝 Total respuestas recibidas: {len(responses)}")
 
@@ -94,7 +95,8 @@ def lambda_handler(event, context):
             'score': correct_count,
             'passed': passed,
             'results': results,
-            'timestamp': datetime.utcnow().isoformat()
+            'timestamp': datetime.utcnow().isoformat(),
+            'duration_seconds': duration  # Guardamos el tiempo de duración calculado desde Unity
         })
 
         if passed:
@@ -122,7 +124,8 @@ def lambda_handler(event, context):
             'sessionId': session_id,
             'score': correct_count,
             'passed': passed,
-            'incorrectQuestions': [r for r in results if not r['was_correct']]
+            'incorrectQuestions': [r for r in results if not r['was_correct']],
+            'duration_seconds': duration  # Devolver el tiempo de duración en la respuesta
         })
 
         print("📤 Respuesta final:", response_data)
