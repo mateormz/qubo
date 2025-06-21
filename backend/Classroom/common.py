@@ -1,6 +1,7 @@
 import json
 import os
 import boto3
+from decimal import Decimal
 
 def validate_token(event, lambda_client):
     try:
