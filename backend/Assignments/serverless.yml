@@ -66,7 +66,7 @@ functions:
     handler: getUserStats.lambda_handler
     events:
       - http:
-          path: user/{classroom_id}/stats
+          path: stats/{classroom_id}
           method: get
           cors: true
 
