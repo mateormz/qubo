@@ -28,7 +28,7 @@ def lambda_handler(event, context):
 
         body = json.loads(event.get('body', '{}'))
         responses = body.get('responses', [])
-        level_time = body.get('level_time', '')  # Nuevo campo: level_time
+        level_time = body.get('level_time', '')  # Nuevo campo
 
         print(f"📝 Total respuestas recibidas: {len(responses)} | ⏱️ Tiempo: {level_time}")
 
@@ -38,9 +38,64 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Invalid or missing responses'})
             }
 
+        # 📦 Tablas DynamoDB
         question_table = dynamodb.Table(os.environ['TABLE_QUESTIONS'])
         session_table = dynamodb.Table(os.environ['TABLE_GAME_SESSIONS'])
         user_table = dynamodb.Table(os.environ['TABLE_USERS'])
+
+        # 🔄 Llamada al Lambda getUserById para obtener classroom_id
+        try:
+            classroom_function_name = f"{os.environ['USER_SERVICE_NAME']}-{os.environ['STAGE']}-getUserById"
+            token = event.get('headers', {}).get('Authorization')
+
+            if not token:
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'error': 'Authorization token is missing'})
+                }
+
+            simulated_event = {
+                "headers": {
+                    "Authorization": token
+                },
+                "pathParameters": {
+                    "user_id": user_id
+                }
+            }
+
+            response = lambda_client.invoke(
+                FunctionName=classroom_function_name,
+                InvocationType='RequestResponse',
+                Payload=json.dumps(simulated_event)
+            )
+
+            user_response = json.loads(response['Payload'].read().decode())
+            if 'statusCode' in user_response and user_response['statusCode'] != 200:
+                return {
+                    'statusCode': 500,
+                    'body': json.dumps({'error': 'Failed to retrieve user data', 'details': user_response})
+                }
+
+            user_body = json.loads(user_response.get('body', '{}'))
+            classroom_id = user_body.get('classroom_id')
+
+            if classroom_id:
+                print(f"✅ classroom_id recibido: {classroom_id}")
+            else:
+                print("⚠️ classroom_id no encontrado en respuesta")
+
+        except Exception as e:
+            print(f"❌ Error llamando a getUserById: {str(e)}")
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'error': 'Internal error while fetching classroom_id'})
+            }
+
+        if not classroom_id:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'classroom_id is missing from user data'})
+            }
 
         print("📦 Tablas DynamoDB obtenidas correctamente.")
 
@@ -87,16 +142,17 @@ def lambda_handler(event, context):
         print(f"📊 Resultado: {correct_count} correctas | {'🟢 Aprobado' if passed else '🔴 Reprobado'}")
         print("💾 Guardando sesión:", session_id)
 
-        # Guardar la sesión con el tiempo del nivel
+        # 💾 Guardar la sesión incluyendo classroom_id y level_time
         session_table.put_item(Item={
             'session_id': session_id,
             'user_id': user_id,
+            'classroom_id': classroom_id,  # ✅ NUEVO
             'game_id': game_id,
             'level_number': level_number,
             'score': correct_count,
             'passed': passed,
             'results': results,
-            'level_time': level_time,  # Guardamos el tiempo en la sesión
+            'level_time': level_time,
             'timestamp': datetime.utcnow().isoformat()
         })
 
@@ -125,8 +181,8 @@ def lambda_handler(event, context):
             'sessionId': session_id,
             'score': correct_count,
             'passed': passed,
-            'incorrectQuestions': [r for r in results if not r['was_correct']],
-            'levelTime': level_time  # Incluir level_time en la respuesta final
+            'levelTime': level_time,
+            'classroom_id': classroom_id  # ✅ Opcional, lo devuelves si quieres
         })
 
         print("📤 Respuesta final:", response_data)

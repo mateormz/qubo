@@ -13,6 +13,8 @@ provider:
     STAGE: ${sls:stage}
     TABLE_CLASSROOMS: ${sls:stage}-qubo-classroom-table
     TABLE_USERS: ${sls:stage}-qubo-auth-user-table # Added this line
+    TABLE_SESSIONS: ${sls:stage}-qubo-sessions-table
+    TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions
     VALIDATE_TOKEN_FUNCTION: validateToken
     USER_SERVICE_NAME: qubo-auth-api
 
@@ -38,6 +40,14 @@ functions:
     events:
       - http:
           path: classrooms/{classroom_id}/students
+          method: get
+          cors: true
+
+  getClassroomStats:
+    handler: getClassroomStats.lambda_handler
+    events:
+      - http:
+          path: classroom/stats/{classroom_id}
           method: get
           cors: true
 
