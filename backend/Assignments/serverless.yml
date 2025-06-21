@@ -63,7 +63,7 @@ functions:
           cors: true
 
   getUserStats:
-    handler: handler.getUserStats
+    handler: getUserStats.lambda_handler
     events:
       - http:
           path: user/{user_id}/stats
