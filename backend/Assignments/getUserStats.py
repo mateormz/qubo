@@ -105,7 +105,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': f'Classroom {classroom_id} not found'})
             }
 
-        # Obtener la lista de estudiantes (con los user_id)
+        # Obtener la lista de estudiantes
         students = classroom_response['Item'].get('students', [])
         print(f"📚 Estudiantes encontrados: {students}")
 
@@ -115,8 +115,20 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'No students found in the classroom'})
             }
 
-        # Extraer solo los user_id de los estudiantes
-        user_ids = [student['S'] for student in students]  # Extraemos el valor de "S" (user_id)
+        # Verificar la estructura de cada estudiante
+        user_ids = []
+        for student in students:
+            print(f"🔍 Estudiante: {student}")
+            if isinstance(student, dict) and 'S' in student:
+                user_ids.append(student['S'])
+            else:
+                print(f"⚠️ Estructura de estudiante inesperada: {student}")
+        
+        if not user_ids:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': 'No valid user_ids found'})
+            }
 
         # Obtener estadísticas para cada estudiante
         all_stats = []
