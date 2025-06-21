@@ -85,21 +85,7 @@ def get_user_stats(user_id):
 
 def lambda_handler(event, context):
     try:
-        # Log del evento para verificar su estructura
-        print("📥 Evento recibido:", json.dumps(event))
-
-        # Verificar que 'pathParameters' es un diccionario
-        if isinstance(event.get('pathParameters'), dict):
-            classroom_id = event['pathParameters'].get('classroom_id')
-            
-        else:
-            print(f"⚠️ 'pathParameters' no es un diccionario. Contenido: {event.get('pathParameters')}")
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': "'pathParameters' should be a dictionary"})
-            }
-
-        # Verificación del classroom_id
+        classroom_id = event['pathParameters'].get('classroom_id')
         if not classroom_id:
             return {
                 'statusCode': 400,
@@ -119,8 +105,9 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': f'Classroom {classroom_id} not found'})
             }
 
-        # Obtener la lista de estudiantes
+        # Obtener la lista de estudiantes (con los user_id)
         students = classroom_response['Item'].get('students', [])
+        print(f"📚 Estudiantes encontrados: {students}")
 
         if not students:
             return {
@@ -128,10 +115,12 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'No students found in the classroom'})
             }
 
+        # Extraer solo los user_id de los estudiantes
+        user_ids = [student['S'] for student in students]  # Extraemos el valor de "S" (user_id)
+
         # Obtener estadísticas para cada estudiante
         all_stats = []
-        for student in students:
-            user_id = student.get('S')
+        for user_id in user_ids:
             print(f"📊 Obteniendo estadísticas para el estudiante {user_id}")
             student_stats = get_user_stats(user_id)
             if student_stats:
