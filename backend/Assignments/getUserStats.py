@@ -24,6 +24,8 @@ def get_user_stats(user_id):
     """
     Obtiene las estadísticas para un usuario dado su user_id.
     """
+    print(f"🔍 Obteniendo estadísticas para el usuario: {user_id}")  # Log para ver qué se pasa como user_id
+
     user_table = dynamodb.Table(os.environ['TABLE_USERS'])
     user_response = user_table.get_item(Key={'user_id': user_id})
     
@@ -81,6 +83,8 @@ def get_user_stats(user_id):
         'last_time_active': last_active_time
     }
 
+    print(f"🔚 Estadísticas obtenidas para {user_id}: {stats}")  # Log para ver las estadísticas obtenidas
+
     return stats
 
 def lambda_handler(event, context):
@@ -105,7 +109,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': f'Classroom {classroom_id} not found'})
             }
 
-        # Obtener la lista de estudiantes
+        # Obtener la lista de estudiantes (con los user_id)
         students = classroom_response['Item'].get('students', [])
         print(f"📚 Estudiantes encontrados: {students}")
 
@@ -115,20 +119,10 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'No students found in the classroom'})
             }
 
-        # Verificar la estructura de cada estudiante
-        user_ids = []
-        for student in students:
-            print(f"🔍 Estudiante: {student}")
-            if isinstance(student, dict) and 'S' in student:
-                user_ids.append(student['S'])
-            else:
-                print(f"⚠️ Estructura de estudiante inesperada: {student}")
-        
-        if not user_ids:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'No valid user_ids found'})
-            }
+        # Si los estudiantes son cadenas, no necesitamos usar ['S']
+        user_ids = students if isinstance(students[0], str) else [student['S'] for student in students]
+
+        print(f"🔍 user_ids extraídos: {user_ids}")
 
         # Obtener estadísticas para cada estudiante
         all_stats = []
