@@ -61,9 +61,7 @@ def lambda_handler(event, context):
                 )
 
                 for session in response.get('Items', []):
-                    if session.get('classroom_id') != classroom_id:
-                        continue
-
+                    # ✅ Ya no dependemos de classroom_id en la sesión
                     timestamp = session.get('timestamp')
                     level_time = session.get('level_time', 0)
                     results = session.get('results', [])
