@@ -21,7 +21,7 @@ provider:
     TABLE_CUSTOM_QUESTIONS: ${sls:stage}-qubo-custom-questions-table
     TABLE_SESSIONS: ${sls:stage}-qubo-sessions-table
     TABLE_USERS: ${sls:stage}-qubo-auth-user-table
-    TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions-table
+    TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions
 
     # Token validation
     USER_SERVICE_NAME: qubo-auth-api
