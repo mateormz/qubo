@@ -85,7 +85,21 @@ def get_user_stats(user_id):
 
 def lambda_handler(event, context):
     try:
-        classroom_id = event['pathParameters'].get('classroom_id')
+        # Log del evento para verificar su estructura
+        print("📥 Evento recibido:", json.dumps(event))
+
+        # Verificar que 'pathParameters' es un diccionario
+        if isinstance(event.get('pathParameters'), dict):
+            classroom_id = event['pathParameters'].get('classroom_id')
+            
+        else:
+            print(f"⚠️ 'pathParameters' no es un diccionario. Contenido: {event.get('pathParameters')}")
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': "'pathParameters' should be a dictionary"})
+            }
+
+        # Verificación del classroom_id
         if not classroom_id:
             return {
                 'statusCode': 400,
