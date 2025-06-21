@@ -24,7 +24,7 @@ def get_user_stats(user_id):
     """
     Obtiene las estadísticas para un usuario dado su user_id.
     """
-    print(f"🔍 Obteniendo estadísticas para el usuario: {user_id}")  # Log para ver qué se pasa como user_id
+    print(f"🔍 Obteniendo estadísticas para el usuario: {user_id}")
 
     user_table = dynamodb.Table(os.environ['TABLE_USERS'])
     user_response = user_table.get_item(Key={'user_id': user_id})
@@ -50,7 +50,7 @@ def get_user_stats(user_id):
     )
 
     total_time_played = 0  # En segundos
-    total_questions_answered = 0
+    total_submits = 0  # Número de submits
     last_active_time = None
 
     # Procesar las sesiones de dev-qubo-sessions-table
@@ -62,7 +62,8 @@ def get_user_stats(user_id):
             session_time = session['timestamp']
             if not last_active_time or session_time > last_active_time:
                 last_active_time = session_time
-        total_questions_answered += len(session.get('results', [])) * 8  # Multiplicamos por 8 por cada submit
+        if 'results' in session:
+            total_submits += 1  # Contamos el número de submits
 
     # Procesar las sesiones de dev-qubo-game-sessions-table
     for game_session in game_sessions_response.get('Items', []):
@@ -73,7 +74,11 @@ def get_user_stats(user_id):
             session_time = game_session['timestamp']
             if not last_active_time or session_time > last_active_time:
                 last_active_time = session_time
-        total_questions_answered += len(game_session.get('results', [])) * 8
+        if 'results' in game_session:
+            total_submits += 1  # Contamos el número de submits
+
+    # Calculamos el total de preguntas respondidas
+    total_questions_answered = total_submits * 8  # 8 preguntas por submit
 
     stats = {
         'user_id': user_id,
@@ -83,9 +88,10 @@ def get_user_stats(user_id):
         'last_time_active': last_active_time
     }
 
-    print(f"🔚 Estadísticas obtenidas para {user_id}: {stats}")  # Log para ver las estadísticas obtenidas
+    print(f"🔚 Estadísticas obtenidas para {user_id}: {stats}")
 
     return stats
+
 
 def lambda_handler(event, context):
     try:
