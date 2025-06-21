@@ -21,6 +21,7 @@ provider:
     TABLE_CUSTOM_QUESTIONS: ${sls:stage}-qubo-custom-questions-table
     TABLE_SESSIONS: ${sls:stage}-qubo-sessions-table
     TABLE_USERS: ${sls:stage}-qubo-auth-user-table
+    TABLE_GAME_SESSIONS: ${sls:stage}-qubo-game-sessions-table
 
     # Token validation
     USER_SERVICE_NAME: qubo-auth-api
@@ -58,6 +59,14 @@ functions:
     events:
       - http:
           path: custom-levels/{level_id}
+          method: get
+          cors: true
+
+  getUserStats:
+    handler: handler.getUserStats
+    events:
+      - http:
+          path: user/{user_id}/stats
           method: get
           cors: true
 
