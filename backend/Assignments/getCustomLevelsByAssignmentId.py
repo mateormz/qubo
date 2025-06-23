@@ -10,7 +10,7 @@ dynamodb = boto3.resource('dynamodb')
 @cors_handler
 def lambda_handler(event, context):
     try:
-        user_info = validate_token(event)   
+        user_info = validate_token(event)
         if 'statusCode' in user_info:
             return user_info
 
