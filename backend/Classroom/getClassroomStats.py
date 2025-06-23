@@ -4,6 +4,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from datetime import datetime
 from common import convert_decimal
+from cors_utils import cors_handler, respond
 
 dynamodb = boto3.resource('dynamodb')
 
@@ -13,37 +14,27 @@ def convert_time_to_seconds(level_time):
     except:
         return 0
 
+@cors_handler
 def lambda_handler(event, context):
     try:
         classroom_id = event['pathParameters'].get('classroom_id')
         if not classroom_id:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'classroom_id is required in the URL'})
-            }
+            return respond(400, {'error': 'classroom_id is required in the URL'})
 
         print(f"🔍 Consultando aula con ID: {classroom_id}")
 
-        # Obtener estudiantes del aula
         classroom_table = dynamodb.Table(os.environ['TABLE_CLASSROOMS'])
         classroom_response = classroom_table.get_item(Key={'classroom_id': classroom_id})
 
         if 'Item' not in classroom_response:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': f'Classroom {classroom_id} not found'})
-            }
+            return respond(404, {'error': f'Classroom {classroom_id} not found'})
 
         students = classroom_response['Item'].get('students', [])
         if not students:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': 'No students found in the classroom'})
-            }
+            return respond(404, {'error': 'No students found in the classroom'})
 
         user_ids = students if isinstance(students[0], str) else [s['S'] for s in students]
 
-        # Tablas de sesiones
         sessions_table = dynamodb.Table(os.environ['TABLE_SESSIONS'])
         game_sessions_table = dynamodb.Table(os.environ['TABLE_GAME_SESSIONS'])
 
@@ -61,12 +52,10 @@ def lambda_handler(event, context):
                 )
 
                 for session in response.get('Items', []):
-                    # ✅ Ya no dependemos de classroom_id en la sesión
                     timestamp = session.get('timestamp')
                     level_time = session.get('level_time', 0)
                     results = session.get('results', [])
 
-                    # Agregados globales
                     unique_users.add(user_id)
                     num_questions = len(results)
                     correct_answers = sum(1 for r in results if r.get('was_correct'))
@@ -76,7 +65,6 @@ def lambda_handler(event, context):
                     total_questions += num_questions
                     total_correct += correct_answers
 
-                    # Agregados por día
                     date_str = timestamp.split('T')[0] if timestamp else 'unknown'
                     if date_str not in sessions_by_day:
                         sessions_by_day[date_str] = {
@@ -92,7 +80,6 @@ def lambda_handler(event, context):
         average_time_per_student = total_time // max(len(unique_users), 1)
         average_correct_rate = total_correct / total_questions if total_questions > 0 else 0
 
-        # Generar progreso por día
         progress_by_day = []
         for date, metrics in sorted(sessions_by_day.items()):
             q = metrics['total_questions_answered']
@@ -111,14 +98,8 @@ def lambda_handler(event, context):
             'progress_by_day': progress_by_day
         }
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps(convert_decimal(result))
-        }
+        return respond(200, convert_decimal(result))
 
     except Exception as e:
         print("❌ Excepción:", str(e))
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
-        }
+        return respond(500, {'error': 'Internal server error', 'details': str(e)})

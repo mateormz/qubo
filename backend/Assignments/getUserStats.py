@@ -2,18 +2,15 @@ import json
 import os
 import boto3
 from datetime import datetime
+from boto3.dynamodb.conditions import Key
 from common import validate_token, convert_decimal
+from cors_utils import cors_handler, respond
 
 dynamodb = boto3.resource('dynamodb')
 
 def convert_time_to_seconds(level_time):
-    """
-    Convierte el tiempo en formato 'str' a un número de segundos.
-    Si el 'level_time' es un número en formato cadena, lo convertimos a int.
-    """
     if level_time:
         try:
-            # Si level_time es un número en formato cadena, lo convertimos a int
             return int(level_time)
         except ValueError:
             print(f"⚠️ Error al convertir level_time: {level_time}")
@@ -21,9 +18,6 @@ def convert_time_to_seconds(level_time):
     return 0
 
 def get_user_stats(user_id):
-    """
-    Obtiene las estadísticas para un usuario dado su user_id.
-    """
     print(f"🔍 Obteniendo estadísticas para el usuario: {user_id}")
 
     user_table = dynamodb.Table(os.environ['TABLE_USERS'])
@@ -31,106 +25,84 @@ def get_user_stats(user_id):
     
     if 'Item' not in user_response:
         print(f"⚠️ Usuario con ID {user_id} no encontrado.")
-        return None  # Si no se encuentra el usuario, devolvemos None
+        return None
     
     user_info = user_response['Item']
-    user_name = user_info.get('name', 'N/A')  # Nombre del usuario
+    user_name = user_info.get('name', 'N/A')
 
     sessions_table = dynamodb.Table(os.environ['TABLE_SESSIONS'])
     game_sessions_table = dynamodb.Table(os.environ['TABLE_GAME_SESSIONS'])
 
     sessions_response = sessions_table.query(
         IndexName='user_id-index',
-        KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_id)
+        KeyConditionExpression=Key('user_id').eq(user_id)
     )
 
     game_sessions_response = game_sessions_table.query(
         IndexName='user_id-index',
-        KeyConditionExpression=boto3.dynamodb.conditions.Key('user_id').eq(user_id)
+        KeyConditionExpression=Key('user_id').eq(user_id)
     )
 
-    total_time_played = 0  # En segundos
-    total_submits = 0  # Número de submits
+    total_time_played = 0
+    total_submits = 0
     last_active_time = None
 
-    # Procesar las sesiones de dev-qubo-sessions-table
     for session in sessions_response.get('Items', []):
         if 'level_time' in session:
-            level_time = session['level_time']
-            total_time_played += convert_time_to_seconds(level_time)  # Convertimos level_time a segundos
+            total_time_played += convert_time_to_seconds(session['level_time'])
         if 'timestamp' in session:
-            session_time = session['timestamp']
-            if not last_active_time or session_time > last_active_time:
-                last_active_time = session_time
+            if not last_active_time or session['timestamp'] > last_active_time:
+                last_active_time = session['timestamp']
         if 'results' in session:
-            total_submits += 1  # Contamos el número de submits
+            total_submits += 1
 
-    # Procesar las sesiones de dev-qubo-game-sessions-table
     for game_session in game_sessions_response.get('Items', []):
         if 'level_time' in game_session:
-            level_time = game_session['level_time']
-            total_time_played += convert_time_to_seconds(level_time)
+            total_time_played += convert_time_to_seconds(game_session['level_time'])
         if 'timestamp' in game_session:
-            session_time = game_session['timestamp']
-            if not last_active_time or session_time > last_active_time:
-                last_active_time = session_time
+            if not last_active_time or game_session['timestamp'] > last_active_time:
+                last_active_time = game_session['timestamp']
         if 'results' in game_session:
-            total_submits += 1  # Contamos el número de submits
+            total_submits += 1
 
-    # Calculamos el total de preguntas respondidas
-    total_questions_answered = total_submits * 8  # 8 preguntas por submit
+    total_questions_answered = total_submits * 8
 
     stats = {
         'user_id': user_id,
         'name': user_name,
-        'total_time_played': total_time_played,  # Total tiempo jugado en segundos
+        'total_time_played': total_time_played,
         'questions_answered': total_questions_answered,
         'last_time_active': last_active_time
     }
 
     print(f"🔚 Estadísticas obtenidas para {user_id}: {stats}")
-
     return stats
 
-
+@cors_handler
 def lambda_handler(event, context):
     try:
         classroom_id = event['pathParameters'].get('classroom_id')
         if not classroom_id:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': 'classroom_id is required in the URL'})
-            }
+            return respond(400, {'error': 'classroom_id is required in the URL'})
 
         print(f"🔍 Consultando aula con ID: {classroom_id}")
 
-        # Consultar la tabla de aulas para obtener los estudiantes
         classroom_table = dynamodb.Table(os.environ['TABLE_CLASSROOMS'])
         classroom_response = classroom_table.get_item(Key={'classroom_id': classroom_id})
 
         if 'Item' not in classroom_response:
             print(f"⚠️ Aula con ID {classroom_id} no encontrada.")
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': f'Classroom {classroom_id} not found'})
-            }
+            return respond(404, {'error': f'Classroom {classroom_id} not found'})
 
-        # Obtener la lista de estudiantes (con los user_id)
         students = classroom_response['Item'].get('students', [])
         print(f"📚 Estudiantes encontrados: {students}")
 
         if not students:
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': 'No students found in the classroom'})
-            }
+            return respond(404, {'error': 'No students found in the classroom'})
 
-        # Si los estudiantes son cadenas, no necesitamos usar ['S']
         user_ids = students if isinstance(students[0], str) else [student['S'] for student in students]
-
         print(f"🔍 user_ids extraídos: {user_ids}")
 
-        # Obtener estadísticas para cada estudiante
         all_stats = []
         for user_id in user_ids:
             print(f"📊 Obteniendo estadísticas para el estudiante {user_id}")
@@ -138,14 +110,11 @@ def lambda_handler(event, context):
             if student_stats:
                 all_stats.append(student_stats)
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps({'classroom_id': classroom_id, 'students_stats': all_stats})
-        }
+        return respond(200, {
+            'classroom_id': classroom_id,
+            'students_stats': all_stats
+        })
 
     except Exception as e:
         print("❌ Excepción general:", str(e))
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
-        }
+        return respond(500, {'error': 'Internal server error', 'details': str(e)})
