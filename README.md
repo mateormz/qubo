@@ -14,42 +14,46 @@ QUBO es una plataforma educativa gamificada que permite a estudiantes de secunda
 - Panel de estadísticas, logros y puntos acumulados.
 
 ### 👦 Vista del Estudiante
-- Registro mediante código de clase.
 - Mascota virtual personalizable (ropa, color, accesorios).
 - Minijuegos y quizzes matemáticos alineados al currículo escolar.
-- Retos diarios, sistema de puntos y logros desbloqueables.
+- Tareas asignadas, sistema de puntos y logros desbloqueables.
 - Tienda virtual para canjear monedas “qu”.
-- Chatbot de ayuda.
+- Feedback de niveles con asistente IA.
 
 ---
 
 ## 🧱 Tech Stack
 
-### 🔹 Frontend
-- React.js
-- HTML5, CSS3, JavaScript
-- React Router DOM
-- Context API
-- Tailwind CSS o Material UI
+### 🔹 Web (Next.js)
+- Next.js (inicializado con `create-next-app`)
+- TypeScript
+- React
+- Optimización de fuentes con `next/font`
+- Despliegue en Vercel
 
 ### 🔹 Backend (Serverless)
 - AWS Lambda (funciones backend)
 - API Gateway (exposición de endpoints)
 - DynamoDB (base de datos NoSQL)
-- JWT para autenticación y autorización
+- Generación de Tokens para autenticación y autorización
 - CloudWatch (logs y métricas)
+- S3 para despliegue de imágenes
 
 ### 🔹 Infraestructura
-- Amazon S3 (hosting del frontend)
-- CloudFront (distribución global)
+- Vercel (hosting del frontend)
+- AWS (distribución global)
 - GitHub (control de versiones y CI/CD)
-- Docker (desarrollo y testing local)
+- Unity (desarrollo del apk)
+
+### 🔹 App Educativa (Unity)
+- Desarrollo en Unity (motor de juego)
+- Minijuegos interactivos con lógica matemática
+- Exportado e integrado como parte del ecosistema QUBO
+- Integración de la API QUBO
 
 ---
 
-## 📦 Estructura del Proyecto
-- /frontend --> App en React
-- /backend --> Funciones Lambda (JavaScript)
-- /infrastructure --> Configuraciones de AWS (Serverless Framework o SAM)
-- /docs --> Documentación de endpoints, modelos y flujos
-- /assets --> Imágenes, logo, íconos
+## 🔗 Repositorios Relacionados
+
+- 🎮 App Educativa (Unity): [mateormz/quboapp](https://github.com/mateormz/quboapp)
+- 🌐 Página Web (Next.js): [d4vidmanu/qubo-web](https://github.com/d4vidmanu/qubo-web)
